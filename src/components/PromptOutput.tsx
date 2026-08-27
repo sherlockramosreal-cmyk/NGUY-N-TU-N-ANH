@@ -305,10 +305,10 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             onClick={handleCopy}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md ${
               copied
-                ? 'bg-black text-white shadow-sm'
+                ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
                 : isEmpty
-                ? 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 cursor-pointer'
-                : 'bg-black hover:bg-zinc-800 text-white hover:scale-102 active:scale-98'
+                ? 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
+                : 'bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black hover:scale-102 active:scale-98'
             }`}
           >
             {copied ? (
@@ -323,6 +323,15 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
               </>
             )}
           </button>
+          
+          <a 
+            href="https://aistudio.google.com/apps" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 hover:scale-102 active:scale-98"
+          >
+            <span>🚀 Mở AI Studio</span>
+          </a>
         </div>
       </div>
     </div>
