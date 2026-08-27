@@ -1,0 +1,43 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+body {
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+/* Chế độ Vàng (Sepia / Reading Mode) - Tối giản, dịu mắt */
+html.sepia body {
+    background-color: #FDF9F3 !important;
+    color: #4A4238 !important;
+}
+html.sepia header {
+    background-color: rgba(253, 249, 243, 0.95) !important;
+    border-bottom-color: #E8DFD3 !important;
+}
+html.sepia .bg-white, 
+html.sepia .dark\:bg-slate-900,
+html.sepia .bg-slate-50, 
+html.sepia .dark\:bg-slate-800 {
+    background-color: #F6EFE6 !important;
+}
+html.sepia .border-slate-200, 
+html.sepia .dark\:border-slate-800,
+html.sepia .dark\:border-slate-700 {
+    border-color: #E8DFD3 !important;
+}
+html.sepia .text-slate-900, 
+html.sepia .text-slate-800, 
+html.sepia .dark\:text-white,
+html.sepia .dark\:text-slate-200 {
+    color: #3C362D !important;
+}
+html.sepia .text-slate-500, 
+html.sepia .text-slate-400,
+html.sepia .text-slate-600 {
+    color: #796C5C !important;
+}
+html.sepia input, html.sepia select, html.sepia textarea {
+    background-color: #FDF9F3 !important;
+    border-color: #E8DFD3 !important;
+    color: #3C362D !important;
+}

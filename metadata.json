@@ -1,0 +1,6 @@
+{
+  "name": "Hỗ Trợ Prompt Tạo Web Tự Học",
+  "description": "Hỗ trợ prompt để tạo web nhằm hỗ trợ tự học tương tác cá nhân hóa",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
