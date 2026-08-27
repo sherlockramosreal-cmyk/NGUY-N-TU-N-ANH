@@ -9,6 +9,7 @@ import ConfigurationArea from './components/ConfigurationArea';
 import PromptOutput from './components/PromptOutput';
 import LiveSimulatorModal from './components/LiveSimulatorModal';
 import DocumentExtractorModal from './components/DocumentExtractorModal';
+import ToastContainer, { toast } from './components/Toast';
 import { PromptConfig, GradeLevel, ExamTarget, StudyMode, MiniGameId, ExtractedCard } from './types';
 import { compileMasterPrompt, PRESET_TEMPLATES, THEORY_PRESETS, SAMPLE_VOCABULARY_DEFAULT } from './data/promptTemplates';
 
@@ -23,8 +24,8 @@ const DEFAULT_CONFIG: PromptConfig = {
   studyModes: ['flashcard3d', 'active_recall', 'exam_mode', 'doc_extractor', 'export_pdf'],
   selectedGames: ['tetris', 'dino', 'penalty', 'dragdrop', 'truefalse', 'scramble', 'hangman'],
   colorTheme: 'indigo',
-  primaryColor: '#4f46e5',
-  accentColor: '#7c3aed',
+  primaryColor: '#18181b',
+  accentColor: '#27272a',
   uiStyle: 'minimalist',
   fontChoice: 'vietnam',
   systemUtilities: ['web_speech', 'streak_heatmap', 'web_audio', 'dark_mode'],
@@ -73,6 +74,7 @@ export default function App() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CONFIG));
     } catch {}
+    toast.success('Đã khôi phục cài đặt gốc');
   };
 
   const handleSaveToLessonBank = (updatedConfig: PromptConfig, cards: ExtractedCard[]) => {
@@ -80,7 +82,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans antialiased select-none">
+    <div className="h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white flex flex-col font-sans antialiased select-none">
       {/* Header */}
       <Header
         onSelectPreset={handleSelectPreset}
@@ -96,6 +98,7 @@ export default function App() {
           config={config}
           onChange={setConfig}
           onOpenExtractor={() => setIsExtractorOpen(true)}
+          onReset={handleReset}
         />
 
         {/* Right Column: Real-Time Master Prompt Output Terminal (5 cols = 41.7%) */}
@@ -124,6 +127,8 @@ export default function App() {
           setIsSimulatorOpen(true);
         }}
       />
+      
+      <ToastContainer />
     </div>
   );
 }

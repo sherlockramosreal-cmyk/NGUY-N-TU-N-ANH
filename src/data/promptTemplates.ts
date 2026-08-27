@@ -122,13 +122,13 @@ export const MINI_GAME_CONFIGS: Record<MiniGameId, { name: string; tag: string; 
 };
 
 export const COLOR_THEME_OPTIONS = [
-  { id: 'indigo', name: 'Indigo & Violet', desc: 'Học thuật & Trí tuệ', primary: '#4f46e5', secondary: '#7c3aed' },
+  { id: 'indigo', name: 'Đen Tuyền', desc: 'Sang trọng, Tối giản', primary: '#18181b', secondary: '#27272a' },
   { id: 'emerald', name: 'Emerald & Teal', desc: 'Tươi sáng, Sinh thái', primary: '#059669', secondary: '#0d9488' },
   { id: 'amber', name: 'Amber & Rose', desc: 'Năng động, Sáng tạo', primary: '#d97706', secondary: '#e11d48' },
   { id: 'ocean', name: 'Ocean & Cyan', desc: 'Biển sâu, Hiện đại', primary: '#0284c7', secondary: '#06b6d4' },
   { id: 'ruby', name: 'Ruby (Học Thuộc)', desc: 'Phong cách Học Thuộc Thông Minh', primary: '#e11d48', secondary: '#9f1239' },
   { id: 'cyberpunk', name: 'Cyberpunk Neon', desc: 'Game Arcade Đậm nét', primary: '#06b6d4', secondary: '#8b5cf6' },
-  { id: 'slate', name: 'Xám Tối Giản', desc: 'Vercel / Linear Chuẩn', primary: '#334155', secondary: '#475569' },
+  { id: 'slate', name: 'Xám Trắng', desc: 'Sáng sủa, Thanh lịch', primary: '#f1f5f9', secondary: '#e2e8f0' },
 ];
 
 export const UI_STYLE_OPTIONS = [
@@ -143,6 +143,12 @@ export const FONT_OPTIONS = [
   { id: 'montserrat', name: 'Montserrat', desc: 'Hình khối hiện đại, tiêu đề khỏe khoắn' },
   { id: 'jetbrains', name: 'JetBrains Mono', desc: 'Đậm chất code & game terminal kỹ thuật số' },
   { id: 'inter', name: 'Inter Display', desc: 'Giao diện ứng dụng số tinh tế chuẩn công nghệ' },
+  { id: 'geist', name: 'Geist', desc: 'Sắc sảo, phong cách developer tối giản' },
+  { id: 'jakarta', name: 'Plus Jakarta Sans', desc: 'Rõ ràng, chuyên nghiệp cho bảng điều khiển' },
+  { id: 'outfit', name: 'Outfit', desc: 'Hình học bo tròn thân thiện, xu hướng' },
+  { id: 'lexend', name: 'Lexend', desc: 'Dễ đọc, hỗ trợ người mắc chứng khó đọc' },
+  { id: 'grotesk', name: 'Space Grotesk', desc: 'Phá cách, cảm hứng vũ trụ và kỹ thuật' },
+  { id: 'sora', name: 'Sora', desc: 'Sáng sủa, sắc nét cho giao diện web3' },
 ];
 
 export const SYSTEM_UTILITY_OPTIONS = [
@@ -229,8 +235,8 @@ export const PRESET_TEMPLATES = [
       studyModes: ['flashcard3d', 'active_recall', 'exam_mode', 'export_pdf'] as StudyMode[],
       selectedGames: ['tetris', 'penalty', 'truefalse', 'scramble'] as MiniGameId[],
       colorTheme: 'indigo' as const,
-      primaryColor: '#4f46e5',
-      accentColor: '#7c3aed',
+      primaryColor: '#18181b',
+      accentColor: '#27272a',
       uiStyle: 'minimalist' as const,
       fontChoice: 'vietnam' as const,
       systemUtilities: ['streak_heatmap', 'web_audio', 'dark_mode'] as const,
@@ -365,7 +371,7 @@ export function isEnglishTarget(config: PromptConfig): boolean {
   return true;
 }
 
-export function compileMasterPrompt(config: PromptConfig): string {
+export function compileMasterPrompt(config: PromptConfig): string | string[] {
   const isEnglish = isEnglishTarget(config);
   const gradePrompt = getGradePedagogyPrompt(config.gradeLevel, isEnglish);
   const examPrompts = config.examTargets.map(target => getExamPedagogyPrompt(target, isEnglish)).join('\n\n');
@@ -374,9 +380,7 @@ export function compileMasterPrompt(config: PromptConfig): string {
   const designPrompt = getDesignSystemPrompt(config);
   const technicalPrompt = getTechnicalRulesPrompt(config);
 
-  const appHeadline = isEnglish
-    ? 'ỨNG DỤNG WEB HỌC TIẾNG ANH TƯƠNG TÁC ĐA TÍNH NĂNG (Interactive English Learning & Gamification Arcade)'
-    : 'ỨNG DỤNG WEB HỌC TẬP & ÔN LUYỆN KIẾN THỨC TƯƠNG TÁC (Interactive Knowledge Learning & Gamification Arcade - Kiến Thức Tiếng Việt Thuần Túy)';
+  const appHeadline = 'ỨNG DỤNG WEB HỌC TẬP & ÔN LUYỆN KIẾN THỨC TƯƠNG TÁC (Học Thuộc Thông Minh - Lịch Sử 11 & Gamification Arcade) tích hợp BỘ MÁY ĐỌC LINK ĐA TẦNG DỰ PHÒNG CHỐNG NGHẼN (Robust Multi-Tier URL Fallback Engine)';
 
   const datasetExtractionRules = isEnglish
     ? `[QUY TẮC BẮT BUỘC DÀNH CHO AI (GEMINI TRONG AI STUDIO)]:
@@ -414,7 +418,7 @@ Khi tiếp nhận prompt này, bài học này là KIẾN THỨC TIẾNG VIỆT 
 3. TỔNG HỢP BẢNG TÓM TẮT LÝ THUYẾT & NỘI DUNG TRỌNG TÂM (Theory Cheat Sheet): Đúc kết các ý chính, mốc sự kiện quan trọng, công thức hoặc quy tắc cốt lõi thành thẻ ghi nhớ đẹp mắt.
 4. ĐỒNG BỘ TOÀN DIỆN VÀO TẤT CẢ MINI-GAMES & CHẾ ĐỘ THI: Đưa bộ thuật ngữ, định nghĩa và bối cảnh Tiếng Việt vào Flashcard 3D, Active Recall Quiz, Exam Mode, Xếp gạch, Khủng long, Penalty... hoàn toàn bằng Tiếng Việt.`;
 
-  return `Bạn là một Chuyên gia Lập trình Game Sư phạm và Kỹ sư Web Frontend Cao cấp (Senior EdTech & Game Web Developer).
+  const basePrompt = `Bạn là một Chuyên gia Lập trình Game Sư phạm và Kỹ sư Web Frontend Cao cấp (Senior EdTech & Game Web Developer).
 Hãy viết mã nguồn hoàn chỉnh 100% cho một ${appHeadline} theo chuẩn đề tài Nghiên cứu Khoa học THPT năm 2026.
 
 ===================================================================
@@ -423,14 +427,147 @@ Hãy viết mã nguồn hoàn chỉnh 100% cho một ${appHeadline} theo chuẩn
 ${technicalPrompt}
 
 ===================================================================
-2. MỤC TIÊU SƯ PHẠM & ĐẶC TẢ ĐỐI TƯỢNG HỌC TẬP:
+2. BỘ MÁY ĐỌC LINK ĐA TẦNG DỰ PHÒNG (ROBUST MULTI-TIER URL ENGINE):
+===================================================================
+Khi người dùng dán đường link bài viết/tài liệu (Wikipedia, báo chí, tài liệu học tập):
+- Tự động chạy thuật toán thử nghiệm lần lượt qua 4 cổng kết nối dự phòng (Multi-Tier Proxy Pipeline) để vượt rào cản CORS và tường lửa, đảm bảo 100% không bị nghẽn:
+  + Cổng 1: Jina Reader (https://r.jina.ai/[URL]) -> Trích xuất Markdown sạch đã lọc quảng cáo.
+  + Cổng 2 (Nếu cổng 1 lỗi): AllOrigins Proxy (https://api.allorigins.win/raw?url=...) -> Lấy HTML và dùng DOMParser loại bỏ script/ads.
+  + Cổng 3 (Nếu cổng 2 lỗi): CorsProxy IO (https://corsproxy.io/?...) -> Dự phòng serverless.
+  + Cổng 4 (Nếu cổng 3 lỗi): CodeTabs Gateway (https://api.codetabs.com/v1/proxy?quest=...).
+- Thuật toán bóc tách 4 tầng tri thức (Zero-Key): Dựa vào Tiêu đề (H1) và Mục tiêu bài học để quét các câu định nghĩa ('là khái niệm...', 'được hiểu là...'), từ in đậm (**từ khóa**) và câu chủ đề đầu đoạn để rút ra 10 - 15 thẻ học cốt lõi, tự động nạp thẳng vào Flashcard 3D và 7 Mini-game!
+
+BẮT BUỘC SỬ DỤNG MÃ NGUỒN SAU ĐỂ BÓC TÁCH BÀI VIẾT TỪ RAW HTML (Nếu cổng 1 Jina lỗi và phải dùng HTML từ Cổng 2, 3, 4):
+\`\`\`javascript
+function extractCleanFullArticleFromHTML(rawHTML) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(rawHTML, 'text/html');
+
+  // BƯỚC 1: XÓA SẠCH CÁC THẺ KỸ THUẬT VÀ KHUNG GIAO DIỆN
+  const tagBlacklist = [
+    'script', 'style', 'noscript', 'iframe', 'canvas', 'svg', 
+    'form', 'button', 'input', 'select', 'textarea', 'dialog',
+    'nav', 'header', 'footer', 'aside'
+  ];
+  doc.querySelectorAll(tagBlacklist.join(',')).forEach(el => el.remove());
+
+  // BƯỚC 2: XÓA CÁC CLASS/ID QUẢNG CÁO, MẠNG XÃ HỘI, BÌNH LUẬN
+  const junkPattern = /(comment|disqus|sidebar|breadcrumb|footer|header|banner|advert|ad-|ads-|social|share|sponsor|taboola|outbrain|popup|modal|cookie|widget|related-posts|nav-|menu-)/i;
+  doc.querySelectorAll('div, section, article, aside, ul, ol, p, span').forEach(el => {
+    const classAndId = \`\${el.className || ''} \${el.id || ''} \${el.getAttribute('role') || ''}\`;
+    if (junkPattern.test(classAndId)) {
+      const isMainContainer = /(article-body|post-content|main-content|entry-content|story-body)/i.test(classAndId);
+      if (!isMainContainer) el.remove();
+    }
+  });
+
+  // BƯỚC 3: TÌM KHỐI BÀI VIẾT CHÍNH QUA MẬT ĐỘ CHỮ & MẬT ĐỘ LINK
+  let contentRoot = doc.querySelector('article, main, [role="main"], .post-content, .article-body, .entry-content, #content, .content, .story-body');
+  
+  if (!contentRoot) {
+    let bestCandidate = doc.body;
+    let maxTextLength = 0;
+    doc.querySelectorAll('div, section').forEach(el => {
+      const totalText = el.innerText || '';
+      let linkText = '';
+      el.querySelectorAll('a').forEach(a => linkText += a.innerText || '');
+      const linkDensity = totalText.length > 0 ? (linkText.length / totalText.length) : 1;
+      
+      if (linkDensity < 0.35 && totalText.length > maxTextLength) {
+        maxTextLength = totalText.length;
+        bestCandidate = el;
+      }
+    });
+    contentRoot = bestCandidate || doc.body;
+  }
+
+  // BƯỚC 4: TRÍCH XUẤT 100% NỘI DUNG CÓ CẤU TRÚC
+  let title = doc.querySelector('h1')?.innerText?.trim() || doc.querySelector('title')?.innerText?.trim() || 'Tài liệu';
+  title = title.replace(/\\s*[-|–•].*$/, '').trim();
+
+  const extractedNodes = [];
+  const walker = doc.createTreeWalker(contentRoot, NodeFilter.SHOW_ELEMENT, {
+    acceptNode: (node) => {
+      const tag = node.tagName.toLowerCase();
+      if (['h1', 'h2', 'h3', 'h4', 'p', 'li', 'blockquote'].includes(tag)) return NodeFilter.FILTER_ACCEPT;
+      return NodeFilter.FILTER_SKIP;
+    }
+  });
+
+  let currentNode;
+  while ((currentNode = walker.nextNode())) {
+    const tag = currentNode.tagName.toLowerCase();
+    const text = (currentNode.innerText || currentNode.textContent || '').trim().replace(/\\s+/g, ' ');
+    if (text.length < 5) continue;
+
+    if (tag.startsWith('h')) extractedNodes.push(\`\\n### \${text}\\n\`);
+    else if (tag === 'li') extractedNodes.push(\`* \${text}\`);
+    else if (tag === 'blockquote') extractedNodes.push(\`> "\${text}"\`);
+    else extractedNodes.push(text);
+  }
+
+  return { title, fullMarkdownText: \`# \${title}\\n\\n\` + extractedNodes.join('\\n\\n') };
+}
+\`\`\`
+
+BẮT BUỘC THÊM Ô NHẬP TẢI FILE (TẢI LÊN PDF VÀ WORD .DOCX) VÀ SỬ DỤNG MÃ NGUỒN XỬ LÝ DƯỚI ĐÂY:
+- Hiển thị một khung tải file kéo thả đẹp mắt, hỗ trợ chọn file .pdf và .docx.
+- Xử lý đọc file bằng mã nguồn sau:
+\`\`\`html
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // Hàm đọc nội dung từ tệp PDF bằng PDF.js
+  async function readTextFromPdf(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    const maxPages = Math.min(pdf.numPages, 20);
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += \`\\n--- Trang \${i} ---\\n\` + pageText;
+    }
+    return { text: fullText, numPages: pdf.numPages };
+  }
+
+  // Hàm đọc nội dung từ tệp Word (.docx) bằng Mammoth.js
+  async function readTextFromDocx(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+    return { text: result.value };
+  }
+
+  // Hàm điều phối xử lý tự động khi người dùng chọn tệp
+  async function handleExtractUploadedDocument(file) {
+    const fileName = file.name.toLowerCase();
+    let textContent = '';
+    let titleHint = file.name.replace(/\\.(pdf|docx|doc)$/i, '');
+
+    if (fileName.endsWith('.pdf')) {
+      const res = await readTextFromPdf(file);
+      textContent = res.text;
+    } else if (fileName.endsWith('.docx')) {
+      const res = await readTextFromDocx(file);
+      textContent = res.text;
+    }
+
+    // Đưa văn bản qua bộ bóc tách 4 tầng tri thức
+    return { title: titleHint, fullMarkdownText: textContent };
+  }
+</script>
+\`\`\`
+
+===================================================================
+3. MỤC TIÊU SƯ PHẠM & ĐẶC TẢ ĐỐI TƯỢNG HỌC TẬP:
 ===================================================================
 ${gradePrompt}
 
 ${examPrompts ? `[ĐẶC TẢ ĐỊNH HƯỚNG THI CỬ & BỔ TRỢ ĐÃ CHỌN]:\n${examPrompts}` : ''}
 
 ===================================================================
-3. DỮ LIỆU BÀI HỌC: CHỦ ĐỀ, MỤC LỤC, LÝ THUYẾT & TẬP DỮ LIỆU (DATASET):
+4. DỮ LIỆU BÀI HỌC: CHỦ ĐỀ, MỤC LỤC, LÝ THUYẾT & TẬP DỮ LIỆU (DATASET):
 ===================================================================
 - Tên bài học / Chủ đề chính: "${config.lessonTopic}"
 
@@ -447,24 +584,44 @@ ${config.theoryContent.trim()}
 ${config.sampleContent && config.sampleContent.trim() ? `[DỮ LIỆU NGUỒN / MỤC LỤC & VĂN BẢN TRÍCH XUẤT CỦA BÀI HỌC]:\n${config.sampleContent.trim()}\n` : ''}
 
 ===================================================================
-4. ĐẶC TẢ CHI TIẾT CÁC CHẾ ĐỘ HỌC THUẬT (ACADEMIC MODES):
+5. ĐẶC TẢ CHI TIẾT CÁC CHẾ ĐỘ HỌC THUẬT (ACADEMIC MODES):
 ===================================================================
 ${studyModePrompts || '- Không chọn chế độ học thuật nào.'}
 
 ===================================================================
-5. ĐẶC TẢ THUẬT TOÁN & LOGIC GAME GAMIFICATION (${config.selectedGames.length} TRÒ CHƠI ĐÃ CHỌN):
+6. ĐẶC TẢ THUẬT TOÁN & LOGIC GAME GAMIFICATION (${config.selectedGames.length} TRÒ CHƠI ĐÃ CHỌN):
 ===================================================================
 ${miniGamePrompts || '- Không có mini-game nào được chọn.'}
 
 ===================================================================
-6. THIẾT KẾ UI/UX, BẢNG MÀU & TIỆN ÍCH HỆ THỐNG:
+7. THIẾT KẾ UI/UX, BẢNG MÀU & TIỆN ÍCH HỆ THỐNG:
 ===================================================================
 ${designPrompt}
 
 ===================================================================
-7. YÊU CẦU ĐẦU RA MÃ NGUỒN & QUY TẮC BỘ NHỚ (OUTPUT DELIVERABLES):
+8. YÊU CẦU ĐẦU RA MÃ NGUỒN & QUY TẮC BỘ NHỚ (OUTPUT DELIVERABLES):
 ===================================================================
-- Hãy xuất mã nguồn hoàn chỉnh 100% trong một khối mã duy nhất, không dùng placeholder (không dùng // TODO, // tự viết tiếp), không cắt ngắn logic.
+`;
+
+  if (config.promptStrategy === 'modular_3_parts') {
+    const prompt1 = basePrompt + `- Đóng vai Frontend Developer. Bạn hãy TRÌNH BÀY bộ khung HTML chuẩn, nhúng thư viện (Tailwind, Lucide, PDF.js, Mammoth.js), thiết kế giao diện UI đầy đủ và khởi tạo bộ dữ liệu JSON (từ vựng/ngữ pháp) đã bóc tách.
+- LỆNH CHỐT: Chỉ viết mã nguồn UI và Data. ĐỂ TRỐNG phần logic JavaScript của các chế độ học và mini-game (bạn có thể viết các thẻ HTML/CSS và các hàm rỗng). Tôi sẽ yêu cầu viết logic ở prompt tiếp theo.`;
+
+    const prompt2 = `Chào bạn, đây là phần tiếp theo của ứng dụng học tập. Dựa vào bộ UI và JSON bạn đã viết ở phần trước, hãy VIẾT TIẾP logic JavaScript:
+1. Lập trình "Bộ máy đọc Link/PDF đa tầng" (URL Engine + File Parser) như đặc tả ban đầu.
+2. Viết code hoàn chỉnh cho 3 Mini-game / Chế độ học đầu tiên (ví dụ: Flashcard 3D, Active Recall, Tetris...).
+- LỆNH CHỐT: Viết nối tiếp vào file HTML/JS trước đó. Bạn chỉ cần viết mã xử lý sự kiện JavaScript cho phần này.`;
+
+    const prompt3 = `Chào bạn, đây là phần cuối cùng của ứng dụng học tập. Hãy VIẾT TIẾP logic JavaScript cho các Mini-game và tiện ích còn lại:
+1. Viết code cho các trò chơi còn lại (${config.selectedGames.slice(3).join(', ')}).
+2. Tích hợp âm thanh (Web Audio API), chế độ Dark Mode, biểu đồ Heatmap.
+3. Hoàn thiện hệ thống tính điểm, lưu LocalStorage và hoàn thiện file HTML cuối cùng.
+- LỆNH CHỐT: Đảm bảo toàn bộ 100% ứng dụng chạy mượt mà ngay trên trình duyệt mà không cần chạy server NodeJS.`;
+
+    return [prompt1, prompt2, prompt3];
+  }
+
+  return basePrompt + `- Hãy xuất mã nguồn hoàn chỉnh 100% trong một khối mã duy nhất, không dùng placeholder (không dùng // TODO, // tự viết tiếp), không cắt ngắn logic.
 - "PHAO CỨU SINH" XỬ LÝ GIỚI HẠN BỘ NHỚ (Token Limit Lifesaver): Nếu mã nguồn quá dài và vượt giới hạn bộ nhớ của một lần trả lời, hãy DỪNG LẠI ở một hàm/thẻ hoàn chỉnh. Tuyệt đối không được cắt xén logic để ép cho vừa. Tôi sẽ gõ 'Tiếp tục' để bạn viết phần code còn lại.
 - Kiểm tra cẩn thận các sự kiện click, touch, keyboard, Web Audio API và LocalStorage để toàn bộ các game và chế độ học đều có thể chơi mượt mà ngay trên trình duyệt.`;
 }
@@ -845,8 +1002,8 @@ function getDesignSystemPrompt(config: PromptConfig): string {
   const theme = COLOR_THEME_OPTIONS.find(t => t.id === config.colorTheme);
   const themeName = theme ? theme.name : 'Tùy chỉnh (Custom Theme)';
   const themeDesc = theme ? theme.desc : 'Phối màu cá nhân hóa người dùng';
-  const primaryColor = config.primaryColor || (theme ? theme.primary : '#4f46e5');
-  const accentColor = config.accentColor || (theme ? theme.secondary : '#7c3aed');
+  const primaryColor = config.primaryColor || (theme ? theme.primary : '#18181b');
+  const accentColor = config.accentColor || (theme ? theme.secondary : '#27272a');
 
   const style = UI_STYLE_OPTIONS.find(s => s.id === config.uiStyle) || UI_STYLE_OPTIONS[0];
   const font = FONT_OPTIONS.find(f => f.id === config.fontChoice) || FONT_OPTIONS[0];
@@ -872,13 +1029,11 @@ ${activeUtilities.length > 0 ? activeUtilities.join('\n') : '  + Giao diện tin
 
 function getTechnicalRulesPrompt(config: PromptConfig): string {
   if (config.outputFormat === 'single_file_html') {
-    return `- ĐÓNG GÓI TOÀN BỘ TRONG DUY NHẤT 1 FILE HTML HOÀN CHỈNH (<!DOCTYPE html> ... </html>). TUYỆT ĐỐI KHÔNG chia nhỏ thành nhiều file (KHÔNG dùng cấu trúc React/Vite/TypeScript nhiều file như App.tsx, package.json, main.tsx). Người dùng chỉ cần lưu file .html này và mở trực tiếp trên bất kỳ trình duyệt nào là chạy được ngay 100%.
-- Nhúng thư viện qua CDN: Tailwind CSS (<script src="https://cdn.tailwindcss.com"></script>) và Lucide Icons (<script src="https://unpkg.com/lucide@latest"></script>).
-- BẢO VỆ & DỰ PHÒNG AN TOÀN (Fallback CDN & Icons): Trong trường hợp CDN Lucide Icons không tải được hoặc mạng chập chờn, mã nguồn PHẢI có cơ chế tự động dự phòng (Fallback): sử dụng các biểu tượng Unicode/Emoji (🔄, ✔️, ❌, 🎮, 💡, ⏱️, 🏆, v.v.) hoặc nhúng trực tiếp vài SVG cơ bản cho các nút bấm quan trọng để giao diện luôn hiển thị toàn vẹn và không bao giờ bị lỗi nút trống.
-- KHÔNG ĐƯỢC viết tắt, KHÔNG dùng placeholder (như // TODO, // tự viết tiếp). Toàn bộ các game và chế độ học thuật phải được viết code JavaScript xử lý sự kiện thật 100%, chơi được trực tiếp trên trình duyệt.
-- Sử dụng Web Audio API (AudioContext) để tạo hiệu ứng âm thanh tiếng bíp/ding/jump/cheer khi chơi game không phụ thuộc file mp3 ngoài.
-- Lưu toàn bộ tiến độ, điểm số các game, lịch sử ôn tập và chuỗi ngày học (Streak) vào LocalStorage.
-- Giao diện đáp ứng 100% (Responsive) trên cả điện thoại di động và máy tính, có nút chuyển đổi Chế độ Sáng / Tối (Light/Dark Mode).`;
+    return `- Đóng gói toàn bộ trong DUY NHẤT 1 FILE HTML hoàn chỉnh (<!DOCTYPE html> ... </html>), nhúng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>), Lucide Icons CDN (<script src="https://unpkg.com/lucide@latest"></script>), Canvas Confetti CDN, PDF.js CDN (<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>) và Mammoth.js CDN (<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>).
+- BẢO VỆ & DỰ PHÒNG AN TOÀN (Fallback CDN & Icons): Trong trường hợp CDN Lucide Icons không tải được, mã nguồn PHẢI tự động hiển thị biểu tượng Unicode/Emoji (🔊, 🔄, ✔️, ❌, 🎮, 💡, ⏱️, 🏆, v.v.) để giao diện luôn hiển thị trọn vẹn, không bị lỗi nút trống.
+- KHÔNG ĐƯỢC viết tắt, KHÔNG dùng placeholder (như // TODO, // tự viết tiếp). Toàn bộ 7 game và các chế độ học thuật phải được viết code JavaScript xử lý sự kiện thật 100%, chạy mượt mà ngay trên trình duyệt.
+- Sử dụng Web Speech API (window.speechSynthesis với lang='vi-VN') phát âm tiếng Việt chuẩn và Web Audio API (AudioContext) để tạo hiệu ứng âm thanh tiếng bíp/ding/jump/goal khi chơi game.
+- Giao diện đáp ứng 100% (Responsive) trên cả điện thoại và máy tính, hỗ trợ chế độ Sáng / Tối (Light & Dark Mode).`;
   } else if (config.outputFormat === 'react_applet') {
     return `- Cấu trúc React + TypeScript + Tailwind CSS + Lucide Icons.
 - Tách biệt rõ ràng các component: Header, NavigationTabs, AcademicModes, GamificationArcade (với từng Canvas engine component riêng biệt), và ProgressDashboard.

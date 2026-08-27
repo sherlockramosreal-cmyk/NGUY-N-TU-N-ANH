@@ -39,18 +39,6 @@ function normalizeUrlForExtraction(rawUrl: string): { fetchUrl: string; isSpecia
     };
   }
 
-  // Wikipedia article
-  const wikiMatch = url.match(/([a-z]{2})\.wikipedia\.org\/wiki\/([^#?]+)/);
-  if (wikiMatch && wikiMatch[1] && wikiMatch[2]) {
-    const lang = wikiMatch[1];
-    const pageTitle = decodeURIComponent(wikiMatch[2]);
-    return {
-      fetchUrl: `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`,
-      isSpecial: true,
-      specialType: 'wiki',
-    };
-  }
-
   return { fetchUrl: url, isSpecial: false };
 }
 
@@ -145,73 +133,151 @@ function cleanAndStructureHtml(html: string, sourceUrl: string): {
   wordCount: number;
   vocabCount: number;
 } {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-
-  // Extract clean title
-  let rawTitle = doc.querySelector('title')?.innerText || doc.querySelector('h1')?.innerText || 'Tài liệu học tập từ Web';
-  rawTitle = rawTitle.replace(/\s*[-|–—].*$/, '').replace(/^Wikipedia:\s*/i, '').trim();
-  const title = rawTitle || 'Tài liệu học tập tiếng Anh';
-
-  // Remove unwanted elements
-  const removeSelectors = [
-    'script', 'style', 'noscript', 'iframe', 'nav', 'footer', 'header', '.ads', '.ad',
-    '#sidebar', '.sidebar', '.menu', '.nav', '.comments', 'svg', 'form', 'button',
-    '.cookie-banner', '#cookie-notice', '.social-share', '.related-posts'
-  ];
-  removeSelectors.forEach((sel) => {
-    doc.querySelectorAll(sel).forEach((el) => el.remove());
-  });
-
-  // Prefer main content containers
-  const contentContainer =
-    doc.querySelector('article') ||
-    doc.querySelector('main') ||
-    doc.querySelector('.content') ||
-    doc.querySelector('#content') ||
-    doc.querySelector('.post-content') ||
-    doc.querySelector('.entry-content') ||
-    doc.querySelector('.article-body') ||
-    doc.body;
-
-  if (!contentContainer) {
-    return {
-      title,
-      outline: [],
-      tableOfContentsText: '',
-      extractedVocabText: '',
-      theorySummaryText: '',
-      structuredContent: '',
-      wordCount: 0,
-      vocabCount: 0,
-    };
-  }
-
-  // 1. Extract Headings for Table of Contents / Outline
-  const headings = contentContainer.querySelectorAll('h1, h2, h3');
+  let title = 'Tài liệu học tập tiếng Anh';
   const outlineList: string[] = [];
-  headings.forEach((h) => {
-    const text = h.textContent?.replace(/\s+/g, ' ').trim();
-    if (text && text.length > 3 && text.length < 80 && !outlineList.includes(text) && !/comments|share|subscribe/i.test(text)) {
-      outlineList.push(text);
-    }
-  });
-
-  // 2. Extract Sentences and Paragraphs
-  const pElements = contentContainer.querySelectorAll('p, li, blockquote');
   const paragraphs: string[] = [];
   const rawSentences: string[] = [];
 
-  pElements.forEach((el) => {
-    const text = el.textContent?.replace(/\s+/g, ' ').trim();
-    if (text && text.length > 20 && !paragraphs.includes(text)) {
-      paragraphs.push(text);
-      const splitSentences = text.split(/(?<=[.?!])\s+/);
+  if (html.startsWith('Title: ') && html.includes('Markdown Content:')) {
+    // Jina Reader Markdown mode
+    const titleMatch = html.match(/^Title:\s*(.+)$/m);
+    if (titleMatch) {
+      title = titleMatch[1].replace(/\s*[-|–—].*$/, '').replace(/^Wikipedia:\s*/i, '').trim();
+    }
+    
+    const markdownContentIdx = html.indexOf('Markdown Content:');
+    let markdown = html.substring(markdownContentIdx + 17).trim();
+    
+    const lines = markdown.split('\n');
+    let currentParagraph = '';
+    
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) {
+        if (currentParagraph && currentParagraph.length > 20) {
+          paragraphs.push(currentParagraph);
+          const splitSentences = currentParagraph.split(/(?<=[.?!])\s+/);
+          splitSentences.forEach((s) => {
+             if (s.length > 15) rawSentences.push(s.trim());
+          });
+        }
+        currentParagraph = '';
+      } else if (line.startsWith('#')) {
+        const hText = line.replace(/^#+\s*/, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').trim();
+        if (hText.length > 3 && hText.length < 80 && !outlineList.includes(hText) && !/comments|share|subscribe/i.test(hText)) {
+          outlineList.push(hText);
+        }
+      } else if (line.startsWith('![')) {
+        // skip image
+      } else if (line.startsWith('[')) {
+         const cleanLine = line.replace(/\[(.*?)\]\(.*?\)/g, '$1');
+         currentParagraph += (currentParagraph ? ' ' : '') + cleanLine;
+      } else {
+         currentParagraph += (currentParagraph ? ' ' : '') + line;
+      }
+    });
+    
+    if (currentParagraph && currentParagraph.length > 20) {
+      paragraphs.push(currentParagraph);
+      const splitSentences = currentParagraph.split(/(?<=[.?!])\s+/);
       splitSentences.forEach((s) => {
-        if (s.length > 15) rawSentences.push(s.trim());
+         if (s.length > 15) rawSentences.push(s.trim());
       });
     }
-  });
+  } else {
+    // Standard HTML mode
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // 1. Remove technical tags and UI frames
+    const tagBlacklist = [
+      'script', 'style', 'noscript', 'iframe', 'canvas', 'svg', 
+      'form', 'button', 'input', 'select', 'textarea', 'dialog',
+      'nav', 'header', 'footer', 'aside'
+    ];
+    doc.querySelectorAll(tagBlacklist.join(',')).forEach(el => el.remove());
+
+    // 2. Remove ads, social, and comments
+    const junkPattern = /(comment|disqus|sidebar|breadcrumb|footer|header|banner|advert|ad-|ads-|social|share|sponsor|taboola|outbrain|popup|modal|cookie|widget|related-posts|nav-|menu-)/i;
+    doc.querySelectorAll('div, section, article, aside, ul, ol, p, span').forEach(el => {
+      const className = el.getAttribute('class') || '';
+      const idName = el.getAttribute('id') || '';
+      const roleName = el.getAttribute('role') || '';
+      const classAndId = `${className} ${idName} ${roleName}`;
+      
+      if (junkPattern.test(classAndId)) {
+        // Keep main container if it matched
+        const isMainContainer = /(article-body|post-content|main-content|entry-content|story-body)/i.test(classAndId);
+        if (!isMainContainer) el.remove();
+      }
+    });
+
+    // 3. Find main content container via text/link density
+    let contentRoot = doc.querySelector('article, main, [role="main"], .post-content, .article-body, .entry-content, #content, .content, .story-body') as HTMLElement;
+    
+    if (!contentRoot) {
+      let bestCandidate: HTMLElement = doc.body;
+      let maxTextLength = 0;
+      doc.querySelectorAll('div, section').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        const totalText = htmlEl.textContent || '';
+        let linkText = '';
+        htmlEl.querySelectorAll('a').forEach(a => {
+          linkText += a.textContent || '';
+        });
+        const linkDensity = totalText.length > 0 ? (linkText.length / totalText.length) : 1;
+        
+        // If link density is < 35% and has largest text capacity -> It is the main body
+        if (linkDensity < 0.35 && totalText.length > maxTextLength) {
+          maxTextLength = totalText.length;
+          bestCandidate = htmlEl;
+        }
+      });
+      contentRoot = bestCandidate || doc.body;
+    }
+
+    // 4. Extract structured content (headings, paragraphs, lists)
+    let rawTitle = doc.querySelector('h1')?.textContent?.trim() || doc.querySelector('title')?.textContent?.trim() || 'Tài liệu học tập từ Web';
+    rawTitle = rawTitle.replace(/\s*[-|–—•].*$/, '').replace(/^Wikipedia:\s*/i, '').trim();
+    title = rawTitle || 'Tài liệu học tập tiếng Anh';
+
+    const walker = doc.createTreeWalker(
+      contentRoot,
+      NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node) => {
+          const tag = (node as HTMLElement).tagName.toLowerCase();
+          if (['h1', 'h2', 'h3', 'h4', 'p', 'li', 'blockquote'].includes(tag)) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          return NodeFilter.FILTER_SKIP;
+        }
+      }
+    );
+
+    let currentNode;
+    while ((currentNode = walker.nextNode())) {
+      const htmlNode = currentNode as HTMLElement;
+      const tag = htmlNode.tagName.toLowerCase();
+      const text = (htmlNode.textContent || '').trim().replace(/\s+/g, ' ');
+      
+      if (text.length < 5) continue;
+
+      if (tag.startsWith('h')) {
+        if (text.length > 3 && text.length < 80 && !outlineList.includes(text) && !/comments|share|subscribe/i.test(text)) {
+          outlineList.push(text);
+        }
+      } else {
+        if (text.length > 20 && !paragraphs.includes(text)) {
+          paragraphs.push(text);
+          const splitSentences = text.split(/(?<=[.?!])\s+/);
+          splitSentences.forEach((s) => {
+            if (s.length > 15) rawSentences.push(s.trim());
+          });
+        }
+      }
+    }
+  }
 
   // 3. Extract Terms and Vocabulary
   const candidateTerms = extractKeyTermsFromSentences(rawSentences);
@@ -252,7 +318,7 @@ ${tableOfContentsText}
     ? vocabLines.join('\n')
     : `${title.toLowerCase()} : chủ đề bài học chính - We are studying ${title}.`;
 
-  const readingText = paragraphs.slice(0, 8).join('\n\n');
+  const readingText = paragraphs.join('\n\n');
 
   const structuredContent = `[BÀI HỌC: ${title}]
 [NGUỒN LIÊN KẾT: ${sourceUrl}]
@@ -290,54 +356,7 @@ export async function extractContentFromWebLink(rawUrl: string): Promise<LinkExt
 
   let rawData = '';
 
-  // 1. Try local server proxy (/api/proxy-fetch) first - works reliably in node container
-  try {
-    const localProxyRes = await fetch(`/api/proxy-fetch?url=${encodeURIComponent(targetUrl)}`);
-    if (localProxyRes.ok) {
-      rawData = await localProxyRes.text();
-    }
-  } catch {
-    // Continue to fallback
-  }
-
-  // 2. If special Wikipedia REST API summary
-  if (!rawData && normalized.specialType === 'wiki') {
-    try {
-      const wikiRes = await fetch(targetUrl);
-      if (wikiRes.ok) {
-        const json = await wikiRes.json();
-        if (json.extract) {
-          const title = json.title || 'Wikipedia';
-          const sentences = (json.extract as string).split(/(?<=[.?!])\s+/);
-          const candidateTerms = extractKeyTermsFromSentences(sentences);
-          const vocabLines = candidateTerms.map(t => `${t.term} : [Thuật ngữ Wikipedia] - ${t.example}`);
-          const vocabSection = vocabLines.join('\n');
-
-          const tableOfContentsText = `1. Giới thiệu tổng quan: ${title}\n2. Định nghĩa & Khái niệm\n3. Thuật ngữ cốt lõi\n4. Ứng dụng & Bài tập đánh giá`;
-          const theorySummaryText = `[LÝ THUYẾT & KIẾN THỨC CỐT LÕI: ${title}]\n- Tóm tắt: ${json.description || title}\n- Quy tắc: Nắm vững định nghĩa, phiên âm và ngữ cảnh sử dụng của thuật ngữ.`;
-
-          const structuredContent = `[BÀI HỌC: ${title}]\n[NGUỒN: Wikipedia]\n\n[MỤC LỤC & CẤU TRÚC KIẾN THỨC]:\n${tableOfContentsText}\n\n[DANH SÁCH TỪ VỰNG & THUẬT NGỮ CỐT LÕI]:\n${vocabSection}\n\n[NỘI DUNG ĐỌC HIỂU CHI TIẾT]:\n${json.extract}`;
-
-          return {
-            title,
-            outline: ['Giới thiệu', 'Khái niệm', 'Ứng dụng'],
-            tableOfContentsText,
-            extractedVocabText: vocabSection,
-            theorySummaryText,
-            structuredContent,
-            content: structuredContent,
-            sourceUrl: rawUrl,
-            wordCount: structuredContent.split(/\s+/).filter(Boolean).length,
-            vocabCount: vocabLines.length,
-          };
-        }
-      }
-    } catch {
-      // Continue to next fallback
-    }
-  }
-
-  // 3. Try direct fetch in browser
+  // 1. Try direct fetch in browser
   if (!rawData) {
     try {
       const directRes = await fetch(targetUrl, {
@@ -351,23 +370,37 @@ export async function extractContentFromWebLink(rawUrl: string): Promise<LinkExt
     }
   }
 
-  // 4. Cycle through public CORS proxies
+  // 3. Cycle through public CORS proxies
   if (!rawData) {
     const proxies = [
-      (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-      (u: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+      async (u: string) => {
+        const res = await fetch(`https://r.jina.ai/${u}`);
+        if (!res.ok) throw new Error('Proxy error');
+        return await res.text();
+      },
+      async (u: string) => {
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`);
+        if (!res.ok) throw new Error('Proxy error');
+        const data = await res.json();
+        return data.contents;
+      },
+      async (u: string) => {
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(u)}`);
+        if (!res.ok) throw new Error('Proxy error');
+        return await res.text();
+      },
+      async (u: string) => {
+        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`);
+        if (!res.ok) throw new Error('Proxy error');
+        return await res.text();
+      }
     ];
 
-    for (const proxyGen of proxies) {
+    for (const proxyFetch of proxies) {
       try {
-        const proxyUrl = proxyGen(targetUrl);
-        const res = await fetch(proxyUrl);
-        if (res.ok) {
-          rawData = await res.text();
-          if (rawData && rawData.length > 20) {
-            break;
-          }
+        rawData = await proxyFetch(targetUrl);
+        if (rawData && rawData.trim().length > 20) {
+          break;
         }
       } catch {
         // Try next proxy

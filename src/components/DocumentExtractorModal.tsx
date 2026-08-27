@@ -20,12 +20,14 @@ import {
   UploadCloud,
   Loader2,
   AlertCircle,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Code2
 } from 'lucide-react';
 import { PromptConfig, ExtractedCard, KnowledgeLayer } from '../types';
 import { SAMPLE_DOCUMENTS, extractKnowledgeLayers } from '../data/sampleExtractorDocs';
 import { extractTextFromFile } from '../utils/fileParser';
 import { extractContentFromWebLink } from '../utils/linkExtractor';
+import { toast } from './Toast';
 
 interface DocumentExtractorModalProps {
   isOpen: boolean;
@@ -39,28 +41,28 @@ const LAYER_INFO: Record<KnowledgeLayer, { name: string; tag: string; color: str
   1: {
     name: 'Tầng 1: Định nghĩa & Khái niệm cốt lõi',
     tag: 'Definitions & Core Concepts',
-    color: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+    color: 'bg-blue-500/10 text-blue-700  border-blue-200 ',
     desc: 'Thuật ngữ chính, từ vựng trọng tâm kèm phiên âm IPA và nghĩa cốt lõi.',
     icon: '📘',
   },
   2: {
     name: 'Tầng 2: Cụm từ, Collocations & Công thức',
     tag: 'Phrases, Collocations & Formulas',
-    color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+    color: 'bg-emerald-500/10 text-emerald-700  border-emerald-200 ',
     desc: 'Các cụm từ cố định, liên từ kết hợp, thành ngữ idiomatic và cụm giới từ.',
     icon: '🔗',
   },
   3: {
     name: 'Tầng 3: Quy trình & Cấu trúc ngữ pháp',
     tag: 'Grammar Syntax & Processes',
-    color: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+    color: 'bg-amber-500/10 text-amber-700  border-amber-200 ',
     desc: 'Cấu trúc câu, quy tắc biến đổi đảo ngữ, rút gọn phân từ, thể bị động và câu điều kiện.',
     icon: '⚙️',
   },
   4: {
     name: 'Tầng 4: Ngữ cảnh & Ví dụ ứng dụng thực tế',
     tag: 'Contextual Usage & Real Examples',
-    color: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+    color: 'bg-purple-500/10 text-purple-700  border-purple-200 ',
     desc: 'Câu ví dụ hoàn chỉnh, bẫy thi thực chiến, ngữ cảnh học thuật và đời sống.',
     icon: '🌿',
   },
@@ -75,6 +77,7 @@ export default function DocumentExtractorModal({
 }: DocumentExtractorModalProps) {
   const [inputText, setInputText] = useState(SAMPLE_DOCUMENTS[0].text);
   const [selectedDocId, setSelectedDocId] = useState<string>(SAMPLE_DOCUMENTS[0].id);
+  const [rightPaneMode, setRightPaneMode] = useState<'cards' | 'json'>('cards');
   const [cards, setCards] = useState<ExtractedCard[]>(() => {
     return config.extractedCards && config.extractedCards.length > 0
       ? config.extractedCards
@@ -88,6 +91,8 @@ export default function DocumentExtractorModal({
   const [customTopicTitle, setCustomTopicTitle] = useState(config.lessonTopic || SAMPLE_DOCUMENTS[0].topic);
   const [modalLinkInput, setModalLinkInput] = useState('');
   const [isFetchingLink, setIsFetchingLink] = useState(false);
+  const [isHighlightMode, setIsHighlightMode] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFetchLinkInModal = async () => {
@@ -95,6 +100,7 @@ export default function DocumentExtractorModal({
     if (!rawUrl) return;
     setIsFetchingLink(true);
     setFileErrorMsg(null);
+    const toastId = toast.loading('Đang vượt tường lửa đọc link...');
 
     try {
       const result = await extractContentFromWebLink(rawUrl);
@@ -105,9 +111,16 @@ export default function DocumentExtractorModal({
         }
         const extracted = extractKnowledgeLayers(result.content);
         setCards(extracted);
+        toast.dismiss(toastId);
+        toast.success('Bóc tách thành công!');
+      } else {
+        toast.dismiss(toastId);
+        toast.error('Không thể đọc nội dung (Website rỗng hoặc bị chặn).');
       }
     } catch (err: any) {
       console.error('Modal link extraction error:', err);
+      toast.dismiss(toastId);
+      toast.error(err?.message || 'Không thể cào dữ liệu từ liên kết này.');
       setFileErrorMsg(err?.message || 'Không thể cào dữ liệu từ liên kết này.');
       setTimeout(() => setFileErrorMsg(null), 7000);
     } finally {
@@ -117,8 +130,15 @@ export default function DocumentExtractorModal({
 
   const handleProcessUploadedDoc = async (file: File) => {
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File quá lớn! Vui lòng chọn tài liệu dưới 5MB để đảm bảo hiệu năng trình duyệt.');
+      if (modalFileInputRef.current) modalFileInputRef.current.value = '';
+      return;
+    }
     setIsParsingFile(true);
     setFileErrorMsg(null);
+    const toastId = toast.loading('Đang phân tích PDF/DOCX...');
+    
     try {
       const { text, fileName } = await extractTextFromFile(file);
       if (text) {
@@ -128,9 +148,16 @@ export default function DocumentExtractorModal({
         // Auto trigger extraction
         const result = extractKnowledgeLayers(text);
         setCards(result);
+        toast.dismiss(toastId);
+        toast.success('Bóc tách thành công!');
+      } else {
+        toast.dismiss(toastId);
+        toast.error('Không thể đọc nội dung (File rỗng hoặc không hỗ trợ).');
       }
     } catch (err: any) {
       console.error('Modal file parsing error:', err);
+      toast.dismiss(toastId);
+      toast.error('Không thể đọc nội dung file này (có thể là file ảnh chụp)');
       setFileErrorMsg(err?.message || 'Không thể đọc tệp PDF/DOCX.');
       setTimeout(() => setFileErrorMsg(null), 5000);
     } finally {
@@ -251,25 +278,25 @@ export default function DocumentExtractorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-6xl h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-white/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-6xl h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden">
         
         {/* Header */}
-        <div className="flex-none p-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between">
+        <div className="flex-none p-4 sm:px-6 border-b border-zinc-200 dark:border-zinc-800 bg-slate-50/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20">
+            <div className="p-2.5 rounded-2xl text-white dark:text-black shadow-md shadow-sm">
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-base font-extrabold text-zinc-900 dark:text-white tracking-tight">
                   Phân Hệ Bóc Tách Tài Liệu & Nạp Lý Thuyết Mới
                 </h2>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-purple-200">
                   4 Tầng Sư Phạm NCKH
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Tự động trích xuất SGK / Bài đọc thành Flashcard 3D, Active Recall Quiz và 7 Mini-game Gamification
               </p>
             </div>
@@ -279,7 +306,7 @@ export default function DocumentExtractorModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="p-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-slate-600 :text-zinc-800 hover:bg-slate-100 :bg-zinc-100 transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -290,27 +317,27 @@ export default function DocumentExtractorModal({
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           
           {/* LEFT PANE: Document Input & Fast Controls (5 cols) */}
-          <div className="lg:col-span-5 border-r border-slate-200 dark:border-slate-800 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-950/40 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
+          <div className="lg:col-span-5 border-r border-zinc-200 dark:border-zinc-800 flex flex-col min-h-0 bg-white dark:bg-zinc-950 p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
             
             {/* Topic Name */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
                 <span>Chủ đề bài học (Topic Name):</span>
-                <span className="text-[10px] font-normal text-indigo-500">Đồng bộ sang toàn web</span>
+                <span className="text-[10px] font-normal text-zinc-600 dark:text-zinc-400">Đồng bộ sang toàn web</span>
               </label>
               <input
                 type="text"
                 value={customTopicTitle}
                 onChange={(e) => setCustomTopicTitle(e.target.value)}
                 placeholder="VD: Protecting Environment & Ecosystems"
-                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
             {/* Quick Sample Selector */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1">
+                <BookOpen className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                 <span>Nạp tài liệu mẫu nghiên cứu:</span>
               </label>
               <div className="grid grid-cols-1 gap-2">
@@ -321,15 +348,15 @@ export default function DocumentExtractorModal({
                     onClick={() => handleSelectSampleDoc(doc.id)}
                     className={`text-left p-2.5 rounded-xl border text-xs transition flex items-center justify-between ${
                       selectedDocId === doc.id
-                        ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 dark:border-indigo-500 font-bold text-indigo-900 dark:text-indigo-200'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-indigo-300'
+                        ? 'border-indigo-600 bg-zinc-100/80   font-bold text-indigo-900 '
+                        : 'border-slate-200  bg-white  text-slate-700  hover:border-indigo-300'
                     }`}
                   >
                     <div className="truncate pr-2">
                       <span className="block truncate">{doc.title}</span>
-                      <span className="text-[10px] text-slate-400 font-normal">{doc.category}</span>
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal">{doc.category}</span>
                     </div>
-                    {selectedDocId === doc.id && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-none" />}
+                    {selectedDocId === doc.id && <Check className="w-4 h-4 text-black dark:text-white flex-none" />}
                   </button>
                 ))}
               </div>
@@ -364,15 +391,28 @@ export default function DocumentExtractorModal({
                 }}
               />
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <span>Dán văn bản hoặc Kéo thả / Tải file PDF:</span>
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                    <span>Dán văn bản / Kéo thả file:</span>
+                  </label>
+                  <button
+                    onClick={() => {
+                      setIsHighlightMode(!isHighlightMode);
+                      setSelectedText('');
+                    }}
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition flex items-center gap-1 ${isHighlightMode ? 'bg-indigo-100 text-indigo-700  ' : 'bg-slate-100 text-slate-600  '}`}
+                    title="Chế độ bôi đen để bóc tách một đoạn văn bản"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Bôi đen & Bóc tách
+                  </button>
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => modalFileInputRef.current?.click()}
                     disabled={isParsingFile}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-emerald-200 text-[11px] font-bold text-emerald-600 hover:bg-emerald-100 transition cursor-pointer"
                   >
                     {isParsingFile ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -384,7 +424,7 @@ export default function DocumentExtractorModal({
                   <button
                     type="button"
                     onClick={handlePasteClipboard}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[11px] font-bold text-black dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer"
                   >
                     <Clipboard className="w-3 h-3" />
                     <span>Dán Clipboard</span>
@@ -393,7 +433,7 @@ export default function DocumentExtractorModal({
                     type="button"
                     onClick={() => setInputText('')}
                     title="Xóa văn bản"
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                    className="p-1 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-500 hover:bg-rose-50 :bg-rose-950/40 transition cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -401,7 +441,7 @@ export default function DocumentExtractorModal({
               </div>
 
               {fileErrorMsg && (
-                <div className="mb-2 p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                <div className="mb-2 p-2 rounded-lg bg-rose-50 border border-rose-200 text-[11px] text-rose-600 flex items-center gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{fileErrorMsg}</span>
                 </div>
@@ -410,7 +450,7 @@ export default function DocumentExtractorModal({
               {/* Link Input Bar */}
               <div className="flex gap-2 mb-2">
                 <div className="relative flex-1">
-                  <LinkIcon className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <LinkIcon className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-500 dark:text-zinc-400" />
                   <input
                     type="text"
                     value={modalLinkInput}
@@ -421,14 +461,14 @@ export default function DocumentExtractorModal({
                       }
                     }}
                     placeholder="Hoặc dán link trang web / Google Docs..."
-                    className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-8 pr-3 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-8 pr-3 py-1.5 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
                 <button
                   type="button"
                   disabled={isFetchingLink || !modalLinkInput.trim()}
                   onClick={handleFetchLinkInModal}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 text-white dark:text-black text-xs font-bold rounded-xl transition flex items-center gap-1 cursor-pointer"
                 >
                   {isFetchingLink ? <Loader2 className="w-3 h-3 animate-spin" /> : <LinkIcon className="w-3 h-3" />}
                   <span>{isFetchingLink ? 'Đang tải...' : 'Lấy link'}</span>
@@ -436,32 +476,66 @@ export default function DocumentExtractorModal({
               </div>
 
               <div className="relative flex-1 flex flex-col">
-                <textarea
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Dán đoạn văn bản bài học, danh sách từ vựng, hoặc kéo thả / tải lên file PDF/DOCX giáo trình vào đây..."
-                  className="flex-1 w-full p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono leading-relaxed text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none custom-scrollbar"
-                />
+                {isHighlightMode ? (
+                  <div
+                    className="flex-1 w-full p-3 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-mono leading-relaxed text-zinc-900 dark:text-white overflow-y-auto custom-scrollbar whitespace-pre-wrap cursor-text selection:bg-indigo-200 selection:text-indigo-900 :bg-indigo-900/50 :text-indigo-200 relative min-h-[200px]"
+                    onMouseUp={() => {
+                      const selection = window.getSelection();
+                      setSelectedText(selection?.toString().trim() || '');
+                    }}
+                  >
+                    {inputText || (
+                      <span className="text-zinc-500 dark:text-zinc-400 italic">
+                        Chưa có dữ liệu. Hãy tắt chế độ "Bôi đen & Bóc tách" để dán văn bản.
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <textarea
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Dán đoạn văn bản bài học, danh sách từ vựng, hoặc kéo thả / tải lên file PDF/DOCX giáo trình vào đây..."
+                    className="flex-1 w-full p-3 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-mono leading-relaxed text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none custom-scrollbar min-h-[200px]"
+                  />
+                )}
+
+                {isHighlightMode && selectedText && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+                    <button
+                      onClick={() => {
+                        const extracted = extractKnowledgeLayers(selectedText);
+                        setCards(prev => [...prev, ...extracted]);
+                        toast.success(`Đã bóc tách thêm ${extracted.length} thẻ từ vùng chọn!`);
+                        window.getSelection()?.removeAllRanges();
+                        setSelectedText('');
+                      }}
+                      className="px-4 py-2 bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold animate-in zoom-in duration-200 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Bóc tách {selectedText.length} ký tự
+                    </button>
+                  </div>
+                )}
 
                 {isParsingFile && (
-                  <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center gap-2 z-10">
-                    <Loader2 className="w-7 h-7 animate-spin text-indigo-600 dark:text-indigo-400" />
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center gap-2 z-10">
+                    <Loader2 className="w-7 h-7 animate-spin text-black dark:text-white" />
+                    <p className="text-xs font-bold text-zinc-900 dark:text-white">
                       Đang phân tích và trích xuất nội dung PDF...
                     </p>
-                    <p className="text-[10px] text-slate-500">Thư viện pdfjs-dist đang xử lý văn bản theo từng trang</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Thư viện pdfjs-dist đang xử lý văn bản theo từng trang</p>
                   </div>
                 )}
               </div>
 
               {/* Text Counters */}
-              <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+              <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 px-1">
                 <div className="flex items-center gap-3">
                   <span>📝 <strong>{textStats.words}</strong> từ</span>
                   <span>🔤 <strong>{textStats.chars}</strong> ký tự</span>
                   <span>📑 <strong>{textStats.lines}</strong> dòng</span>
                 </div>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="text-[10px] text-emerald-600 font-semibold">
                   ✓ Sẵn sàng bóc tách
                 </span>
               </div>
@@ -472,7 +546,7 @@ export default function DocumentExtractorModal({
               type="button"
               onClick={handleExtract}
               disabled={isExtracting || !inputText.trim()}
-              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              className="w-full py-3 px-4 rounded-2xl hover:from-indigo-500 hover:to-purple-500 text-white dark:text-black font-bold text-xs shadow-lg shadow-sm flex items-center justify-center gap-2 transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
             >
               {isExtracting ? (
                 <>
@@ -489,18 +563,50 @@ export default function DocumentExtractorModal({
           </div>
 
           {/* RIGHT PANE: 4-Layer Preview, Live Card Editor & Save (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col min-h-0 bg-white dark:bg-slate-900 p-4 sm:p-5 overflow-hidden">
+          <div className="lg:col-span-7 flex flex-col min-h-0 bg-white dark:bg-zinc-950 p-4 sm:p-5 overflow-hidden">
             
-            {/* Layer Filter Toolbar */}
-            <div className="flex-none flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+                Kết quả Bóc tách (4 Tầng Tri thức)
+              </h3>
+              <div className="flex items-center bg-zinc-50 dark:bg-black p-1 rounded-xl">
+                <button
+                  onClick={() => setRightPaneMode('cards')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    rightPaneMode === 'cards'
+                      ? 'bg-white  text-black shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 :text-zinc-600'
+                  }`}
+                >
+                  Giao diện Thẻ
+                </button>
+                <button
+                  onClick={() => setRightPaneMode('json')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                    rightPaneMode === 'json'
+                      ? 'bg-white  text-emerald-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 :text-zinc-600'
+                  }`}
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  JSON
+                </button>
+              </div>
+            </div>
+
+            {rightPaneMode === 'cards' ? (
+              <>
+                {/* Layer Filter Toolbar */}
+            <div className="flex-none flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-full">
                 <button
                   type="button"
                   onClick={() => setSelectedLayerFilter('all')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                     selectedLayerFilter === 'all'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                      ? 'bg-black text-white shadow-sm'
+                      : 'bg-slate-100  text-slate-600  hover:bg-slate-200'
                   }`}
                 >
                   <span>Tất cả ({cards.length})</span>
@@ -515,8 +621,8 @@ export default function DocumentExtractorModal({
                       onClick={() => setSelectedLayerFilter(layer)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                         selectedLayerFilter === layer
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                          ? 'bg-black text-white shadow-sm'
+                          : 'bg-slate-100  text-slate-600  hover:bg-slate-200'
                       }`}
                     >
                       <span>{info.icon} Tầng {layer}</span>
@@ -530,9 +636,9 @@ export default function DocumentExtractorModal({
                 <button
                   type="button"
                   onClick={() => handleAddCard(selectedLayerFilter === 'all' ? 1 : selectedLayerFilter)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-50 dark:bg-black hover:bg-zinc-100 dark:hover:bg-zinc-800 :bg-indigo-950 text-zinc-700 dark:text-zinc-300 text-xs font-bold transition"
                 >
-                  <Plus className="w-3.5 h-3.5 text-indigo-500" />
+                  <Plus className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                   <span>Thêm thẻ</span>
                 </button>
               </div>
@@ -552,13 +658,13 @@ export default function DocumentExtractorModal({
             {/* Editable Cards List */}
             <div className="flex-1 min-h-0 overflow-y-auto space-y-3 mt-3 pr-1 custom-scrollbar">
               {filteredCards.length === 0 ? (
-                <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-slate-400">
-                  <Layers className="w-8 h-8 mb-2 opacity-50 text-indigo-500" />
+                <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
+                  <Layers className="w-8 h-8 mb-2 opacity-50 text-zinc-600 dark:text-zinc-400" />
                   <p className="text-xs font-semibold">Chưa có thẻ nào trong tầng kiến thức này.</p>
                   <button
                     type="button"
                     onClick={() => handleAddCard(selectedLayerFilter === 'all' ? 1 : selectedLayerFilter)}
-                    className="mt-3 px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold"
+                    className="mt-3 px-4 py-1.5 rounded-xl bg-black dark:bg-white text-white dark:text-black text-xs font-bold"
                   >
                     + Tạo thẻ mới ngay
                   </button>
@@ -567,7 +673,7 @@ export default function DocumentExtractorModal({
                 filteredCards.map((card) => (
                   <div
                     key={card.id}
-                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 space-y-2.5 transition hover:border-indigo-300 dark:hover:border-indigo-800"
+                    className="p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-slate-50/60 space-y-2.5 transition hover:border-indigo-300 :border-indigo-800"
                   >
                     {/* Top Row: Term, Phonetic, POS & Layer Selector */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -577,19 +683,19 @@ export default function DocumentExtractorModal({
                           value={card.term}
                           onChange={(e) => handleCardChange(card.id, 'term', e.target.value)}
                           placeholder="Thuật ngữ tiếng Anh..."
-                          className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-indigo-600 dark:text-indigo-400 flex-1 min-w-[120px]"
+                          className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-black dark:text-white flex-1 min-w-[120px]"
                         />
                         <input
                           type="text"
                           value={card.phonetic || ''}
                           onChange={(e) => handleCardChange(card.id, 'phonetic', e.target.value)}
                           placeholder="/ipa/"
-                          className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 w-28"
+                          className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-500 dark:text-zinc-400 w-28"
                         />
                         <select
                           value={card.pos}
                           onChange={(e) => handleCardChange(card.id, 'pos', e.target.value)}
-                          className="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-700 dark:text-slate-300"
+                          className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300"
                         >
                           <option value="Noun">Noun (Danh từ)</option>
                           <option value="Verb">Verb (Động từ)</option>
@@ -605,7 +711,7 @@ export default function DocumentExtractorModal({
                         <select
                           value={card.layer}
                           onChange={(e) => handleCardChange(card.id, 'layer', Number(e.target.value) as KnowledgeLayer)}
-                          className="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-700 dark:text-indigo-300"
+                          className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[10px] font-bold text-zinc-600 dark:text-zinc-400"
                         >
                           <option value={1}>Tầng 1 (Định nghĩa)</option>
                           <option value={2}>Tầng 2 (Cụm từ)</option>
@@ -617,7 +723,7 @@ export default function DocumentExtractorModal({
                           type="button"
                           onClick={() => handleDeleteCard(card.id)}
                           title="Xóa thẻ"
-                          className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                          className="p-1 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-500 hover:bg-rose-50 :bg-rose-950/40 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -631,7 +737,7 @@ export default function DocumentExtractorModal({
                         value={card.definition}
                         onChange={(e) => handleCardChange(card.id, 'definition', e.target.value)}
                         placeholder="Định nghĩa / Giải thích tiếng Việt..."
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-white"
                       />
                     </div>
 
@@ -642,22 +748,30 @@ export default function DocumentExtractorModal({
                         value={card.example}
                         onChange={(e) => handleCardChange(card.id, 'example', e.target.value)}
                         placeholder="Câu ví dụ thực tế tiếng Anh (Example sentence)..."
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] italic text-slate-600 dark:text-slate-300"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] italic text-zinc-600 dark:text-zinc-400"
                       />
                     </div>
                   </div>
                 ))
               )}
             </div>
+              </>
+            ) : (
+              <div className="flex-1 min-h-0 mt-2 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 overflow-y-auto custom-scrollbar">
+                <pre className="text-[11px] font-mono text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  {JSON.stringify(cards, null, 2)}
+                </pre>
+              </div>
+            )}
 
             {/* Bottom Controls: Save & Sync Button */}
-            <div className="flex-none pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex-none pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Tổng cộng: <strong className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">{cards.length}</strong> thẻ kiến thức
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  Tổng cộng: <strong className="text-black dark:text-white font-mono text-sm">{cards.length}</strong> thẻ kiến thức
                 </span>
                 {showSuccessToast && (
-                  <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-xl border border-emerald-200 animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Đã nạp vào kho bài học thành công!</span>
                   </span>
@@ -671,7 +785,7 @@ export default function DocumentExtractorModal({
                     handleSave();
                     onOpenSimulator();
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-zinc-50 dark:bg-black hover:bg-slate-200 :bg-slate-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold transition"
                 >
                   <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />
                   <span>Mô phỏng Game với bài học này</span>
@@ -680,7 +794,7 @@ export default function DocumentExtractorModal({
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-500/20 transition hover:scale-102 active:scale-98"
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl hover:from-emerald-500 hover:to-teal-500 text-white dark:text-black text-xs font-extrabold shadow-lg shadow-sm transition hover:scale-102 active:scale-98"
                 >
                   <Save className="w-4 h-4" />
                   <span>Lưu vào kho bài học</span>

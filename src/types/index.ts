@@ -43,7 +43,13 @@ export type FontChoice =
   | 'vietnam'
   | 'montserrat'
   | 'jetbrains'
-  | 'inter';
+  | 'inter'
+  | 'geist'
+  | 'jakarta'
+  | 'outfit'
+  | 'lexend'
+  | 'grotesk'
+  | 'sora';
 
 export type SystemUtility = 
   | 'web_speech'
@@ -83,6 +89,7 @@ export interface PromptConfig {
   fontChoice: FontChoice;
   systemUtilities: SystemUtility[];
   outputFormat: OutputFormat;
+  promptStrategy?: 'single' | 'modular_3_parts';
   strictCompleteCode: boolean;
   vocabCount: number;
   extractedCards?: ExtractedCard[];

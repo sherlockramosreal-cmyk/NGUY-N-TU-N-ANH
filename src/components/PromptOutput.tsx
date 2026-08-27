@@ -18,7 +18,7 @@ import {
 import { PromptConfig } from '../types';
 
 interface PromptOutputProps {
-  promptContent: string;
+  promptContent: string | string[];
   config: PromptConfig;
   onOpenSimulator: () => void;
 }
@@ -27,9 +27,14 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
   const [copied, setCopied] = useState(false);
   const [copyWarning, setCopyWarning] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'prompt' | 'preview' | 'json'>('prompt');
+  const [activeTab, setActiveTab] = useState(0);
 
-  const charCount = promptContent.length;
-  const wordCount = promptContent.trim().split(/\s+/).filter(Boolean).length;
+  const isModular = Array.isArray(promptContent);
+  const currentPromptContent = isModular ? (promptContent as string[])[activeTab] : (promptContent as string);
+  const allPrompts = isModular ? (promptContent as string[]) : [promptContent as string];
+
+  const charCount = currentPromptContent.length;
+  const wordCount = currentPromptContent.trim().split(/\s+/).filter(Boolean).length;
   const estTokens = Math.round(charCount / 3.8); // Rough estimation for mixed Vietnamese/English prompt
 
   const isEmpty = config.studyModes.length === 0 && config.selectedGames.length === 0;
@@ -42,13 +47,13 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
     }
 
     try {
-      await navigator.clipboard.writeText(promptContent);
+      await navigator.clipboard.writeText(currentPromptContent);
       setCopied(true);
       setCopyWarning(null);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       const textarea = document.createElement('textarea');
-      textarea.value = promptContent;
+      textarea.value = currentPromptContent;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
@@ -66,8 +71,10 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       return;
     }
 
-    const filename = `Prompt_TaoWeb_TuHoc_${config.gradeLevel}_${Date.now()}.${format}`;
-    const blob = new Blob([promptContent], { type: 'text/plain;charset=utf-8' });
+    const filename = isModular 
+      ? `Prompt_TaoWeb_TuHoc_${config.gradeLevel}_Part${activeTab + 1}_${Date.now()}.${format}`
+      : `Prompt_TaoWeb_TuHoc_${config.gradeLevel}_${Date.now()}.${format}`;
+    const blob = new Blob([currentPromptContent], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -112,65 +119,82 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
   return (
     <div
       id="rightColumn"
-      className="lg:col-span-5 flex flex-col h-full rounded-2xl border border-slate-800 bg-slate-950 text-slate-100 shadow-xl overflow-hidden relative"
+      className="lg:col-span-5 flex flex-col h-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-xl overflow-hidden relative"
     >
       {/* Top Bar with Live Indicator & Action Buttons */}
-      <div className="px-4 py-3 border-b border-slate-800 bg-slate-900/80 flex flex-wrap items-center justify-between gap-2">
+      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black dark:bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-black dark:bg-white"></span>
           </span>
-          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
+            <Terminal className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
             Master Prompt Real-time
           </span>
         </div>
 
+        {isModular && (
+          <div className="flex items-center bg-white dark:bg-zinc-950 p-0.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] ml-auto mr-3">
+            {allPrompts.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveTab(idx)}
+                className={`px-3 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                  activeTab === idx ? 'bg-black text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-800'
+                }`}
+              >
+                <Layers className="w-3 h-3" />
+                Prompt {idx + 1}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* View mode toggle tabs */}
-        <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-[11px]">
+        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg text-[11px] ml-auto md:ml-0">
           <button
             onClick={() => setViewMode('prompt')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
-              viewMode === 'prompt' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1.5 ${
+              viewMode === 'prompt' ? 'bg-white text-black shadow-sm' : 'text-zinc-500 bg-transparent hover:text-zinc-800'
             }`}
           >
-            <FileCode className="w-3 h-3" />
+            <FileCode className="w-3.5 h-3.5" />
             Prompt
           </button>
           <button
             onClick={() => setViewMode('preview')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
-              viewMode === 'preview' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1.5 ${
+              viewMode === 'preview' ? 'bg-white text-black shadow-sm' : 'text-zinc-500 bg-transparent hover:text-zinc-800'
             }`}
           >
-            <Eye className="w-3 h-3" />
+            <Eye className="w-3.5 h-3.5" />
             Văn bản
           </button>
           <button
             onClick={() => setViewMode('json')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
-              viewMode === 'json' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+            className={`px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1.5 ${
+              viewMode === 'json' ? 'bg-white text-black shadow-sm' : 'text-zinc-500 bg-transparent hover:text-zinc-800'
             }`}
           >
-            <Code2 className="w-3 h-3" />
+            <Code2 className="w-3.5 h-3.5" />
             JSON
           </button>
         </div>
       </div>
 
       {/* Stats Bar */}
-      <div className="px-4 py-2 border-b border-slate-800/80 bg-slate-900/40 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+      <div className="px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
         <div className="flex items-center gap-3">
           <span>
-            Ký tự: <strong className="text-slate-200">{charCount.toLocaleString()}</strong>
+            Ký tự: <strong className="text-zinc-800 dark:text-zinc-100">{charCount.toLocaleString()}</strong>
           </span>
           <span>•</span>
           <span>
-            Từ: <strong className="text-slate-200">{wordCount.toLocaleString()}</strong>
+            Từ: <strong className="text-zinc-800 dark:text-zinc-100">{wordCount.toLocaleString()}</strong>
           </span>
           <span>•</span>
-          <span className="text-emerald-400">
+          <span className="text-zinc-600 dark:text-zinc-400">
             Tokens: <strong>~{estTokens.toLocaleString()}</strong>
           </span>
         </div>
@@ -178,7 +202,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
           <span className={`font-sans font-medium text-[10px] px-2 py-0.5 rounded-md border ${
             isEmpty
               ? 'bg-rose-950 text-rose-300 border-rose-800'
-              : 'bg-indigo-950 text-indigo-400 border-indigo-800/50'
+              : 'bg-indigo-950 text-zinc-500 border-indigo-800/50'
           }`}>
             {config.selectedGames.length} Game • {config.studyModes.length} Chế độ
           </span>
@@ -187,8 +211,8 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
 
       {/* Empty State Warning Alert */}
       {isEmpty && (
-        <div className="px-4 py-2.5 bg-amber-950/70 border-b border-amber-800/60 text-amber-200 text-xs flex items-center gap-2 animate-pulse">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+        <div className="px-4 py-2.5 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-100 text-xs flex items-center gap-2 animate-pulse">
+          <AlertTriangle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
           <span>
             <strong>Cảnh báo:</strong> Bạn chưa chọn Chế độ học thuật hoặc Mini-game nào. Vui lòng tick chọn ít nhất 1 mục bên trái để sinh ứng dụng hoàn chỉnh.
           </span>
@@ -197,14 +221,14 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
 
       {/* Temporary Toast for Validation Warning */}
       {copyWarning && (
-        <div className="absolute top-14 left-4 right-4 z-20 px-4 py-3 bg-rose-950/95 border border-rose-700 text-rose-200 text-xs rounded-xl shadow-2xl flex items-center justify-between gap-2">
+        <div className="absolute top-14 left-4 right-4 z-20 px-4 py-3 bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-100 text-xs rounded-xl shadow-2xl flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
             <span>{copyWarning}</span>
           </div>
           <button
             onClick={() => setCopyWarning(null)}
-            className="text-xs font-bold text-rose-400 hover:text-white"
+            className="text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           >
             Đóng
           </button>
@@ -212,18 +236,18 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       )}
 
       {/* Main Content Terminal */}
-      <div className="flex-1 p-4 font-mono text-xs overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-700 bg-slate-950 text-slate-300">
+      <div className="flex-1 p-4 font-mono text-xs overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-700 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
         {viewMode === 'prompt' && (
-          <pre className="whitespace-pre-wrap font-mono text-[11px] text-slate-300 select-text">
-            {promptContent}
+          <pre className="whitespace-pre-wrap font-mono text-[11px] text-zinc-600 dark:text-zinc-400 select-text">
+            {currentPromptContent}
           </pre>
         )}
 
         {viewMode === 'preview' && (
-          <div className="font-sans text-xs space-y-4 text-slate-300 leading-relaxed max-w-none">
-            {promptContent.split('===================================================================').map((section, idx) => (
-              <div key={idx} className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80">
-                <pre className="font-sans whitespace-pre-wrap text-xs text-slate-200">
+          <div className="font-sans text-xs space-y-4 text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-none">
+            {currentPromptContent.split('===================================================================').map((section, idx) => (
+              <div key={idx} className="p-3.5 rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800">
+                <pre className="font-sans whitespace-pre-wrap text-xs text-zinc-800 dark:text-zinc-100">
                   {section.trim()}
                 </pre>
               </div>
@@ -232,28 +256,28 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
         )}
 
         {viewMode === 'json' && (
-          <pre className="whitespace-pre-wrap font-mono text-[11px] text-emerald-400">
+          <pre className="whitespace-pre-wrap font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
             {jsonPreview}
           </pre>
         )}
       </div>
 
       {/* Model AI Context Advisory */}
-      <div className="px-4 py-2 border-t border-slate-800/80 bg-slate-900/50 text-[11px] text-slate-400 flex items-start gap-1.5">
-        <Info className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+      <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-start gap-1.5">
+        <Info className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
         <span>
-          <strong className="text-slate-300">Mẹo chọn AI Model:</strong> Master Prompt chứa đặc tả kỹ thuật chi tiết (~{estTokens.toLocaleString()} tokens). Khuyến nghị dán vào các mô hình có Context Window lớn (<strong>Gemini 1.5 Pro, Claude 3.5 Sonnet, GPT-4o</strong>) để xuất 100% mã nguồn không bị ngắt quãng.
+          <strong className="text-zinc-600 dark:text-zinc-400">Mẹo chọn AI Model:</strong> Master Prompt chứa đặc tả kỹ thuật chi tiết (~{estTokens.toLocaleString()} tokens). Khuyến nghị dán vào các mô hình có Context Window lớn (<strong>Gemini 1.5 Pro, Claude 3.5 Sonnet, GPT-4o</strong>) để xuất 100% mã nguồn không bị ngắt quãng.
         </span>
       </div>
 
       {/* Bottom Actions Bar */}
-      <div className="p-3 border-t border-slate-800 bg-slate-900/80 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={onOpenSimulator}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition hover:scale-102 active:scale-98"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold transition hover:scale-102 active:scale-98"
         >
-          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <Sparkles className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
           <span>Chạy mô phỏng Sandbox</span>
         </button>
 
@@ -262,7 +286,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             type="button"
             onClick={() => handleDownload('txt')}
             title="Tải file Text (.txt)"
-            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
+            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-medium transition"
           >
             <Download className="w-3.5 h-3.5" />
             <span>.TXT</span>
@@ -271,7 +295,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             type="button"
             onClick={() => handleDownload('md')}
             title="Tải file Markdown (.md)"
-            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
+            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-medium transition"
           >
             <Download className="w-3.5 h-3.5" />
             <span>.MD</span>
@@ -281,15 +305,15 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             onClick={handleCopy}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md ${
               copied
-                ? 'bg-emerald-600 text-white shadow-emerald-500/20'
+                ? 'bg-black text-white shadow-sm'
                 : isEmpty
-                ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 cursor-pointer'
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:scale-102 active:scale-98'
+                ? 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 cursor-pointer'
+                : 'bg-black hover:bg-zinc-800 text-white hover:scale-102 active:scale-98'
             }`}
           >
             {copied ? (
               <>
-                <Check className="w-4 h-4 text-emerald-200 animate-bounce" />
+                <Check className="w-4 h-4 text-zinc-400 animate-bounce" />
                 <span>Đã sao chép ✔️</span>
               </>
             ) : (
