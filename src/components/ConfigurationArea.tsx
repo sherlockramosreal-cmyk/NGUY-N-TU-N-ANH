@@ -37,7 +37,6 @@ import {
   THEORY_PRESETS,
   SAMPLE_VOCABULARY_DEFAULT,
 } from '../data/promptTemplates';
-import { extractContentFromWebLink } from '../utils/linkExtractor';
 import { extractTextFromFile } from '../utils/fileParser';
 import { toast } from './Toast';
 
@@ -51,8 +50,6 @@ interface ConfigurationAreaProps {
 export default function ConfigurationArea({ config, onChange, onOpenExtractor, onReset }: ConfigurationAreaProps) {
   const [showTheoryInput, setShowTheoryInput] = useState(true);
   const [showAdvancedSample, setShowAdvancedSample] = useState(false);
-  const [webLinkInput, setWebLinkInput] = useState('');
-  const [isExtractingLink, setIsExtractingLink] = useState(false);
   const [extractSuccessMsg, setExtractSuccessMsg] = useState<string | null>(null);
   const [extractErrorMsg, setExtractErrorMsg] = useState<string | null>(null);
   const [isFileParsing, setIsFileParsing] = useState(false);
@@ -141,60 +138,6 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
     }
   };
 
-  const handleExtractFromUrl = async () => {
-    const rawUrl = webLinkInput.trim();
-    if (!rawUrl) return;
-
-    setIsExtractingLink(true);
-    setExtractErrorMsg(null);
-    setExtractSuccessMsg(null);
-    const toastId = toast.loading('Đang vượt tường lửa đọc link...');
-
-    try {
-      const result = await extractContentFromWebLink(rawUrl);
-      if (result && result.content) {
-        // Tự động phân loại và điền vào các trường cấu hình
-        const updatedConfig: Partial<PromptConfig> = {
-          sampleContent: result.content,
-        };
-
-        if (result.title) {
-          updatedConfig.lessonTopic = result.title;
-        }
-
-        if (result.theorySummaryText && (!config.theoryContent || config.theoryContent.trim().length < 20)) {
-          updatedConfig.theoryContent = result.theorySummaryText;
-          setShowTheoryInput(true);
-        }
-
-        onChange({ ...config, ...updatedConfig });
-
-        const partsSummary = [
-          result.title ? `Chủ đề: "${result.title}"` : '',
-          result.outline.length > 0 ? `Mục lục (${result.outline.length} mục)` : 'Mục lục tổng quan',
-          result.vocabCount > 0 ? `${result.vocabCount} từ vựng` : '',
-          'Lý thuyết trọng tâm'
-        ].filter(Boolean).join(' • ');
-
-        setExtractSuccessMsg(`Đã bóc tách & cấu trúc thành công: ${partsSummary}`);
-        toast.dismiss(toastId);
-        toast.success('Bóc tách thành công!');
-        setTimeout(() => setExtractSuccessMsg(null), 8000);
-      } else {
-        toast.dismiss(toastId);
-        toast.error('Không thể đọc nội dung (Website rỗng hoặc bị chặn).');
-        throw new Error('Không trích xuất được nội dung bài học.');
-      }
-    } catch (err: any) {
-      console.error('Web link extraction error:', err);
-      toast.dismiss(toastId);
-      toast.error(err?.message || 'Không thể cào dữ liệu từ liên kết này.');
-      setExtractErrorMsg(err?.message || 'Không thể trích xuất nội dung từ liên kết này.');
-      setTimeout(() => setExtractErrorMsg(null), 8000);
-    } finally {
-      setIsExtractingLink(false);
-    }
-  };
 
   const updateConfig = <K extends keyof PromptConfig>(key: K, value: PromptConfig[K]) => {
     onChange({ ...config, [key]: value });
@@ -481,7 +424,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   </button>
                   <button
                     type="button"
-                    disabled={isFileParsing || isExtractingLink}
+                    disabled={isFileParsing}
                     onClick={() => configFileInputRef.current?.click()}
                     title="Tải File (.txt, .pdf, .docx, ...)"
                     className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg transition cursor-pointer disabled:opacity-50 flex items-center justify-center"
@@ -500,45 +443,9 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   )}
                 </div>
 
-                {/* Ô nhập Link & nút Lấy Link */}
-                <div className="flex items-center gap-1.5 flex-1 max-w-[280px]">
-                  <div className="relative w-full">
-                    <LinkIcon className="w-3.5 h-3.5 absolute left-2 top-2 text-zinc-500 dark:text-zinc-400" />
-                    <input
-                      type="text"
-                      value={webLinkInput}
-                      onChange={(e) => {
-                        setWebLinkInput(e.target.value);
-                        if (extractErrorMsg) setExtractErrorMsg(null);
-                      }}
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter' && webLinkInput.trim()) {
-                          await handleExtractFromUrl();
-                        }
-                      }}
-                      placeholder="Dán Link bài học..."
-                      className="w-full text-[11px] rounded-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-7 pr-2 py-1.5 text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500 transition"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={isExtractingLink || isFileParsing || !webLinkInput.trim()}
-                    onClick={async () => {
-                      if (webLinkInput.trim()) {
-                        await handleExtractFromUrl();
-                      } else {
-                        onOpenExtractor?.();
-                      }
-                    }}
-                    title="Lấy dữ liệu từ Link"
-                    className="p-1.5 rounded-lg bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black transition shadow-xs cursor-pointer disabled:opacity-50 disabled:bg-zinc-200 flex items-center justify-center"
-                  >
-                    {isExtractingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronUp className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
             </div>
 
+            </div>
             {/* Thông báo kết quả trích xuất */}
             {extractSuccessMsg && (
               <div className="flex items-start gap-1.5 text-[11px] text-emerald-600 bg-zinc-100 dark:bg-zinc-900 p-2.5 rounded-lg border-zinc-200 dark:border-zinc-800 border-emerald-200/80 animate-fadeIn">

@@ -26,7 +26,6 @@ import {
 import { PromptConfig, ExtractedCard, KnowledgeLayer } from '../types';
 import { SAMPLE_DOCUMENTS, extractKnowledgeLayers } from '../data/sampleExtractorDocs';
 import { extractTextFromFile } from '../utils/fileParser';
-import { extractContentFromWebLink } from '../utils/linkExtractor';
 import { toast } from './Toast';
 
 interface DocumentExtractorModalProps {
@@ -89,44 +88,10 @@ export default function DocumentExtractorModal({
   const [fileErrorMsg, setFileErrorMsg] = useState<string | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [customTopicTitle, setCustomTopicTitle] = useState(config.lessonTopic || SAMPLE_DOCUMENTS[0].topic);
-  const [modalLinkInput, setModalLinkInput] = useState('');
-  const [isFetchingLink, setIsFetchingLink] = useState(false);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFetchLinkInModal = async () => {
-    const rawUrl = modalLinkInput.trim();
-    if (!rawUrl) return;
-    setIsFetchingLink(true);
-    setFileErrorMsg(null);
-    const toastId = toast.loading('Đang vượt tường lửa đọc link...');
-
-    try {
-      const result = await extractContentFromWebLink(rawUrl);
-      if (result && result.content) {
-        setInputText(result.content);
-        if (result.title) {
-          setCustomTopicTitle(result.title);
-        }
-        const extracted = extractKnowledgeLayers(result.content);
-        setCards(extracted);
-        toast.dismiss(toastId);
-        toast.success('Bóc tách thành công!');
-      } else {
-        toast.dismiss(toastId);
-        toast.error('Không thể đọc nội dung (Website rỗng hoặc bị chặn).');
-      }
-    } catch (err: any) {
-      console.error('Modal link extraction error:', err);
-      toast.dismiss(toastId);
-      toast.error(err?.message || 'Không thể cào dữ liệu từ liên kết này.');
-      setFileErrorMsg(err?.message || 'Không thể cào dữ liệu từ liên kết này.');
-      setTimeout(() => setFileErrorMsg(null), 7000);
-    } finally {
-      setIsFetchingLink(false);
-    }
-  };
 
   const handleProcessUploadedDoc = async (file: File) => {
     if (!file) return;
@@ -447,33 +412,6 @@ export default function DocumentExtractorModal({
                 </div>
               )}
 
-              {/* Link Input Bar */}
-              <div className="flex gap-2 mb-2">
-                <div className="relative flex-1">
-                  <LinkIcon className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-500 dark:text-zinc-400" />
-                  <input
-                    type="text"
-                    value={modalLinkInput}
-                    onChange={(e) => setModalLinkInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && modalLinkInput.trim()) {
-                        handleFetchLinkInModal();
-                      }
-                    }}
-                    placeholder="Hoặc dán link trang web / Google Docs..."
-                    className="w-full text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-8 pr-3 py-1.5 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                </div>
-                <button
-                  type="button"
-                  disabled={isFetchingLink || !modalLinkInput.trim()}
-                  onClick={handleFetchLinkInModal}
-                  className="px-3 py-1.5 bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 text-white dark:text-black text-xs font-bold rounded-xl transition flex items-center gap-1 cursor-pointer"
-                >
-                  {isFetchingLink ? <Loader2 className="w-3 h-3 animate-spin" /> : <LinkIcon className="w-3 h-3" />}
-                  <span>{isFetchingLink ? 'Đang tải...' : 'Lấy link'}</span>
-                </button>
-              </div>
 
               <div className="relative flex-1 flex flex-col">
                 {isHighlightMode ? (

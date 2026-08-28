@@ -380,7 +380,7 @@ export function compileMasterPrompt(config: PromptConfig): string | string[] {
   const designPrompt = getDesignSystemPrompt(config);
   const technicalPrompt = getTechnicalRulesPrompt(config);
 
-  const appHeadline = 'ỨNG DỤNG WEB HỌC TẬP & ÔN LUYỆN KIẾN THỨC TƯƠNG TÁC (Học Thuộc Thông Minh - Lịch Sử 11 & Gamification Arcade) tích hợp BỘ MÁY ĐỌC LINK ĐA TẦNG DỰ PHÒNG CHỐNG NGHẼN (Robust Multi-Tier URL Fallback Engine)';
+  const appHeadline = 'ỨNG DỤNG WEB HỌC TẬP & ÔN LUYỆN KIẾN THỨC TƯƠNG TÁC (Học Thuộc Thông Minh & Gamification Arcade)';
 
   const datasetExtractionRules = isEnglish
     ? `[QUY TẮC BẮT BUỘC DÀNH CHO AI (GEMINI TRONG AI STUDIO)]:
@@ -427,89 +427,8 @@ Hãy viết mã nguồn hoàn chỉnh 100% cho một ${appHeadline} theo chuẩn
 ${technicalPrompt}
 
 ===================================================================
-2. BỘ MÁY ĐỌC LINK ĐA TẦNG DỰ PHÒNG (ROBUST MULTI-TIER URL ENGINE):
+2. BỘ TẢI FILE (TẢI LÊN PDF VÀ WORD .DOCX):
 ===================================================================
-Khi người dùng dán đường link bài viết/tài liệu (Wikipedia, báo chí, tài liệu học tập):
-- Tự động chạy thuật toán thử nghiệm lần lượt qua 4 cổng kết nối dự phòng (Multi-Tier Proxy Pipeline) để vượt rào cản CORS và tường lửa, đảm bảo 100% không bị nghẽn:
-  + Cổng 1: Jina Reader (https://r.jina.ai/[URL]) -> Trích xuất Markdown sạch đã lọc quảng cáo.
-  + Cổng 2 (Nếu cổng 1 lỗi): AllOrigins Proxy (https://api.allorigins.win/raw?url=...) -> Lấy HTML và dùng DOMParser loại bỏ script/ads.
-  + Cổng 3 (Nếu cổng 2 lỗi): CorsProxy IO (https://corsproxy.io/?...) -> Dự phòng serverless.
-  + Cổng 4 (Nếu cổng 3 lỗi): CodeTabs Gateway (https://api.codetabs.com/v1/proxy?quest=...).
-- Thuật toán bóc tách 4 tầng tri thức (Zero-Key): Dựa vào Tiêu đề (H1) và Mục tiêu bài học để quét các câu định nghĩa ('là khái niệm...', 'được hiểu là...'), từ in đậm (**từ khóa**) và câu chủ đề đầu đoạn để rút ra 10 - 15 thẻ học cốt lõi, tự động nạp thẳng vào Flashcard 3D và 7 Mini-game!
-
-BẮT BUỘC SỬ DỤNG MÃ NGUỒN SAU ĐỂ BÓC TÁCH BÀI VIẾT TỪ RAW HTML (Nếu cổng 1 Jina lỗi và phải dùng HTML từ Cổng 2, 3, 4):
-\`\`\`javascript
-function extractCleanFullArticleFromHTML(rawHTML) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(rawHTML, 'text/html');
-
-  // BƯỚC 1: XÓA SẠCH CÁC THẺ KỸ THUẬT VÀ KHUNG GIAO DIỆN
-  const tagBlacklist = [
-    'script', 'style', 'noscript', 'iframe', 'canvas', 'svg', 
-    'form', 'button', 'input', 'select', 'textarea', 'dialog',
-    'nav', 'header', 'footer', 'aside'
-  ];
-  doc.querySelectorAll(tagBlacklist.join(',')).forEach(el => el.remove());
-
-  // BƯỚC 2: XÓA CÁC CLASS/ID QUẢNG CÁO, MẠNG XÃ HỘI, BÌNH LUẬN
-  const junkPattern = /(comment|disqus|sidebar|breadcrumb|footer|header|banner|advert|ad-|ads-|social|share|sponsor|taboola|outbrain|popup|modal|cookie|widget|related-posts|nav-|menu-)/i;
-  doc.querySelectorAll('div, section, article, aside, ul, ol, p, span').forEach(el => {
-    const classAndId = \`\${el.className || ''} \${el.id || ''} \${el.getAttribute('role') || ''}\`;
-    if (junkPattern.test(classAndId)) {
-      const isMainContainer = /(article-body|post-content|main-content|entry-content|story-body)/i.test(classAndId);
-      if (!isMainContainer) el.remove();
-    }
-  });
-
-  // BƯỚC 3: TÌM KHỐI BÀI VIẾT CHÍNH QUA MẬT ĐỘ CHỮ & MẬT ĐỘ LINK
-  let contentRoot = doc.querySelector('article, main, [role="main"], .post-content, .article-body, .entry-content, #content, .content, .story-body');
-  
-  if (!contentRoot) {
-    let bestCandidate = doc.body;
-    let maxTextLength = 0;
-    doc.querySelectorAll('div, section').forEach(el => {
-      const totalText = el.innerText || '';
-      let linkText = '';
-      el.querySelectorAll('a').forEach(a => linkText += a.innerText || '');
-      const linkDensity = totalText.length > 0 ? (linkText.length / totalText.length) : 1;
-      
-      if (linkDensity < 0.35 && totalText.length > maxTextLength) {
-        maxTextLength = totalText.length;
-        bestCandidate = el;
-      }
-    });
-    contentRoot = bestCandidate || doc.body;
-  }
-
-  // BƯỚC 4: TRÍCH XUẤT 100% NỘI DUNG CÓ CẤU TRÚC
-  let title = doc.querySelector('h1')?.innerText?.trim() || doc.querySelector('title')?.innerText?.trim() || 'Tài liệu';
-  title = title.replace(/\\s*[-|–•].*$/, '').trim();
-
-  const extractedNodes = [];
-  const walker = doc.createTreeWalker(contentRoot, NodeFilter.SHOW_ELEMENT, {
-    acceptNode: (node) => {
-      const tag = node.tagName.toLowerCase();
-      if (['h1', 'h2', 'h3', 'h4', 'p', 'li', 'blockquote'].includes(tag)) return NodeFilter.FILTER_ACCEPT;
-      return NodeFilter.FILTER_SKIP;
-    }
-  });
-
-  let currentNode;
-  while ((currentNode = walker.nextNode())) {
-    const tag = currentNode.tagName.toLowerCase();
-    const text = (currentNode.innerText || currentNode.textContent || '').trim().replace(/\\s+/g, ' ');
-    if (text.length < 5) continue;
-
-    if (tag.startsWith('h')) extractedNodes.push(\`\\n### \${text}\\n\`);
-    else if (tag === 'li') extractedNodes.push(\`* \${text}\`);
-    else if (tag === 'blockquote') extractedNodes.push(\`> "\${text}"\`);
-    else extractedNodes.push(text);
-  }
-
-  return { title, fullMarkdownText: \`# \${title}\\n\\n\` + extractedNodes.join('\\n\\n') };
-}
-\`\`\`
-
 BẮT BUỘC THÊM Ô NHẬP TẢI FILE (TẢI LÊN PDF VÀ WORD .DOCX) VÀ SỬ DỤNG MÃ NGUỒN XỬ LÝ DƯỚI ĐÂY:
 - Hiển thị một khung tải file kéo thả đẹp mắt, hỗ trợ chọn file .pdf và .docx.
 - Xử lý đọc file bằng mã nguồn sau:

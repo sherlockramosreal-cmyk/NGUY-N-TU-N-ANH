@@ -39,6 +39,20 @@ function loadSavedConfig(): PromptConfig {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
+      
+      // Tự động dọn dẹp bộ nhớ đệm (localStorage) nếu chứa rác từ Cloudflare
+      const junkPattern = /Just a moment|thuvienphapluat\.vn|Performing security verification/i;
+      
+      if (parsed.lessonTopic && junkPattern.test(parsed.lessonTopic)) {
+        parsed.lessonTopic = DEFAULT_CONFIG.lessonTopic;
+      }
+      if (parsed.theoryContent && junkPattern.test(parsed.theoryContent)) {
+        parsed.theoryContent = DEFAULT_CONFIG.theoryContent;
+      }
+      if (parsed.sampleContent && junkPattern.test(parsed.sampleContent)) {
+        parsed.sampleContent = DEFAULT_CONFIG.sampleContent;
+      }
+      
       return { ...DEFAULT_CONFIG, ...parsed };
     }
   } catch (e) {
