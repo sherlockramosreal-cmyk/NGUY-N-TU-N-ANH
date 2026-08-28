@@ -29,6 +29,11 @@ export const EXAM_CONFIGS: Record<ExamTarget, { label: string; desc: string; ico
     desc: 'Từ vựng AWL, Collocations C1, Paraphrase theo Band điểm',
     icon: 'BookOpen',
   },
+  sat: {
+    label: 'Digital SAT',
+    desc: 'Reading & Writing, Math, Vocabulary in Context (1400+)',
+    icon: 'BookOpenCheck',
+  },
   vact: {
     label: 'VACT - ĐGNL ĐHQG TP.HCM',
     desc: 'Tư duy đọc hiểu logic, tính mạch lạc, chọn từ theo sắc thái',
@@ -321,8 +326,8 @@ export const PRESET_TEMPLATES = [
  * or Pure Vietnamese subject knowledge (History, Geography, Civic Education, General Vietnamese studies, etc.)
  */
 export function isEnglishTarget(config: PromptConfig): boolean {
-  // 1. Explicit IELTS Academic selection is ALWAYS English
-  if (config.examTargets.includes('ielts')) {
+  // 1. Explicit IELTS Academic or SAT selection is ALWAYS English
+  if (config.examTargets.includes('ielts') || config.examTargets.includes('sat')) {
     return true;
   }
 
@@ -364,7 +369,7 @@ export function isEnglishTarget(config: PromptConfig): boolean {
   }
 
   // 5. If English targets are present, default to English
-  if (config.examTargets.some((t) => t === 'ielts' || t === 'thptqg' || t === 'giaotiep' || t === 'vact')) {
+  if (config.examTargets.some((t) => t === 'ielts' || t === 'sat' || t === 'thptqg' || t === 'giaotiep' || t === 'vact')) {
     return true;
   }
 
@@ -427,56 +432,114 @@ Hãy viết mã nguồn hoàn chỉnh 100% cho một ${appHeadline} theo chuẩn
 ${technicalPrompt}
 
 ===================================================================
-2. BỘ TẢI FILE (TẢI LÊN PDF VÀ WORD .DOCX):
+2. CƠ CHẾ NHẬP LIỆU, BÓC TÁCH & BẢO VỆ CÚ PHÁP TOÁN HỌC (TEXTAREA PARSER & KATEX ENGINE):
 ===================================================================
-BẮT BUỘC THÊM Ô NHẬP TẢI FILE (TẢI LÊN PDF VÀ WORD .DOCX) VÀ SỬ DỤNG MÃ NGUỒN XỬ LÝ DƯỚI ĐÂY:
-- Hiển thị một khung tải file kéo thả đẹp mắt, hỗ trợ chọn file .pdf và .docx.
-- Xử lý đọc file bằng mã nguồn sau:
-\`\`\`html
-<script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+- Form Nạp Dữ Liệu: Chỉ thiết kế một ô Textarea duy nhất, to, rõ ràng và có khả năng tự động co giãn chiều cao (Auto-expanding).
+- Quy tắc nghiêm ngặt: Hệ thống KHÔNG tải file, KHÔNG xử lý link, chỉ nhận văn bản thuần (Plain Text).
+- Thuật toán bóc tách dữ liệu (JavaScript):
+  + Quét từng dòng văn bản được dán vào Textarea.
+  + Tự động cắt chuỗi để tạo thẻ Flashcard dựa trên dấu gạch ngang (-) hoặc dấu hai chấm (:).
+  + Ví dụ: Người dùng nhập "Artificial Intelligence : Trí tuệ nhân tạo" hoặc "Sustainable - Bền vững", hệ thống tự động bóc tách thành mặt trước (thuật ngữ) và mặt sau (định nghĩa) của thẻ học.
+  + Dữ liệu sau khi bóc tách phải lập tức được đồng bộ vào tất cả các Mini-game và chế độ học.
+- BẢO VỆ CÚ PHÁP TRONG THUẬT TOÁN BÓC TÁCH (CRITICAL PARSER RULE):
+  + Cảnh báo lỗi logic: Trong Toán/Hóa, dấu trừ - (như $q_1 = -4/9$) và dấu tỉ lệ : xuất hiện liên tục.
+  + Yêu cầu nâng cấp thuật toán: Regex phân tách chuỗi phải BỎ QUA (không được cắt) các dấu - hoặc : nếu chúng đang nằm bên trong cặp dấu $...$ hoặc $$...$$.
+  + Xử lý tốt các ký tự escape (\\) để hệ thống không nuốt mất các lệnh như \\pi, \\rightarrow, \\frac, \\Delta.
+- TÍCH HỢP THƯ VIỆN & COMPONENT RENDER (KATEX):
+  + Bắt buộc nhúng thư viện KaTeX (JS và CSS stylesheet) qua CDN vào file gốc.
+  + Xây dựng một utility function hoặc React Component <LatexRenderer text="{content}"/>.
+  + Logic nhận diện: Quét văn bản đầu vào, dùng regex để parse $$...$$ thành công thức Block (căn giữa, đứng 1 dòng) và $...$ thành công thức Inline (hiển thị cùng dòng với văn bản thường).
+- TỐI ƯU UI/UX CHỐNG TRÀN GIAO DIỆN:
+  + Các công thức dài (như chuỗi phản ứng Hóa học hoặc ma trận) khi render trên Flashcard 3D, Active Recall, và Mini-games phải được bọc trong thẻ div có class Tailwind: overflow-x-auto overflow-y-hidden no-scrollbar max-w-full.
+  + Kích thước công thức (em/rem) phải đồng bộ với văn bản thông thường để giao diện Card không bị méo.
+- DỮ LIỆU ĐẦU VÀO MẪU (TEST CASES) ĐỂ ĐẢM BẢO HOẠT ĐỘNG (Hệ thống phải xử lý đúng các dòng nhập liệu sau mà không bị cắt sai):
+  + Lực Cu-lông : Lực tương tác $F = k \\frac{|q_1 q_2|}{r^2}$, biết $q_1 = -\\frac{4}{9}q_3$
+  + Oxi hóa C3H8O - $CH_3-CH(OH)-CH_3 + CuO \\xrightarrow{t^\\circ} CH_3-CO-CH_3 + Cu + H_2O$
+  + Tính xác suất - Nhớ đúng 2 câu được $0.25$ điểm, 4 câu được $1$ điểm.
+  -> Kết quả: Bóc tách chính xác Từ khóa (trước dấu ngắt) và Định nghĩa (chứa công thức render KaTeX chuẩn chỉnh, không bị vỡ dấu trừ hay dấu chia).
+- TIỀN XỬ LÝ CHỐNG NHIỄU DỮ LIỆU (DATA SANITIZATION CHO PDF/WORD):
+  + Khi người dùng copy/paste từ file PDF hoặc Word, văn bản thường bị dính khoảng trắng thừa (tab, double space) và bị ngắt dòng (newline) vô lý giữa chừng câu làm hỏng cấu trúc Flashcard.
+  + Yêu cầu hệ thống phải có 2 bước xử lý:
+    * Làm sạch khoảng trắng: Chạy .replace(/\\s+/g, ' ').trim() trên mọi dòng đầu vào để dọn sạch các dấu cách kép, tab ẩn.
+    * Gom dòng thông minh (Smart Line Merging): Duyệt mảng các dòng. Nếu một dòng KHÔNG chứa dấu phân cách hợp lệ (như ":" hoặc "-"), thuật toán phải tự động hiểu đây là phần đuôi của định nghĩa/ví dụ bị rớt dòng từ PDF, và BẮT BUỘC PHẢI NỐI (append) nó vào đuôi của dòng ngay phía trên.
+  + Logic bóc tách JavaScript BẮT BUỘC tích hợp để chống lỗi PDF:
+\`\`\`javascript
+    const rawLines = text.split('\\n');
+    const mergedLines = [];
 
-  // Hàm đọc nội dung từ tệp PDF bằng PDF.js
-  async function readTextFromPdf(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    const maxPages = Math.min(pdf.numPages, 20);
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += \`\\n--- Trang \${i} ---\\n\` + pageText;
-    }
-    return { text: fullText, numPages: pdf.numPages };
-  }
+    // BƯỚC 1: GOM DÒNG (SMART MERGE) & LÀM SẠCH KHOẢNG TRẮNG
+    rawLines.forEach(line => {
+      let clean = line.replace(/\\s+/g, ' ').trim(); // Dọn rác khoảng trắng
+      if (!clean) return;
 
-  // Hàm đọc nội dung từ tệp Word (.docx) bằng Mammoth.js
-  async function readTextFromDocx(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-    return { text: result.value };
-  }
+      // Cảnh báo: Sử dụng regex thông minh để nhận diện dấu : hoặc - (bỏ qua dấu âm trong công thức Toán học)
+      // Nếu dòng chứa dấu phân cách hợp lệ hoặc là dòng đầu tiên:
+      const hasDelimiter = /[:\\-–]/.test(clean); 
+      
+      if (hasDelimiter || mergedLines.length === 0) {
+        mergedLines.push(clean); // Khởi tạo thẻ mới
+      } else {
+        // Đích thị là chữ bị rớt dòng do copy từ PDF -> Nối trực tiếp vào thẻ liền trước
+        mergedLines[mergedLines.length - 1] += ' ' + clean;
+      }
+    });
 
-  // Hàm điều phối xử lý tự động khi người dùng chọn tệp
-  async function handleExtractUploadedDocument(file) {
-    const fileName = file.name.toLowerCase();
-    let textContent = '';
-    let titleHint = file.name.replace(/\\.(pdf|docx|doc)$/i, '');
-
-    if (fileName.endsWith('.pdf')) {
-      const res = await readTextFromPdf(file);
-      textContent = res.text;
-    } else if (fileName.endsWith('.docx')) {
-      const res = await readTextFromDocx(file);
-      textContent = res.text;
-    }
-
-    // Đưa văn bản qua bộ bóc tách 4 tầng tri thức
-    return { title: titleHint, fullMarkdownText: textContent };
-  }
-</script>
+    // BƯỚC 2: BÓC TÁCH MẶT TRƯỚC / MẶT SAU (TỪ MẢNG ĐÃ GOM DÒNG)
+    mergedLines.forEach(line => {
+      // Regex tránh cắt nhầm công thức KaTeX
+      const parts = line.replace(/^\\d+[.\\s]+/, '').split(/[:\\-–](?![^$]*\\$)/).map(s => s.trim()).filter(Boolean);
+      
+      if (parts.length >= 2) {
+        const rawWord = parts[0];
+        const posMatch = rawWord.match(/\\(([^)]+)\\)/);
+        const ipaMatch = rawWord.match(/\\/([^/]+)\\//);
+        
+        const word = rawWord.replace(/\\([^)]+\\)/g, '').replace(/\\/[^/]+\\//g, '').trim();
+        const defVi = parts[1];
+        const example = parts[2] || ('Example context for ' + word);
+        const pos = posMatch ? posMatch[1].trim() : 'noun';
+        const ipa = ipaMatch ? '/' + ipaMatch[1].trim() + '/' : '/.../';
+        
+        extractedWords.push({ word, pos, ipa, defVi, defEn: defVi, example });
+      }
+    });
 \`\`\`
+- TÍCH HỢP BỘ PROMPT AI TIỀN XỬ LÝ DỮ LIỆU DÀNH CHO GIÁO VIÊN (AI DATA SANITIZATION PROMPT):
+  + Trong giao diện "Bóc Tách Tài Liệu" (Modal Nhập liệu), PHẢI thiết kế thêm một nút hoặc khu vực "Mẹo: Dọn dẹp dữ liệu PDF bằng AI" (có icon Sparkles ✨).
+  + Khi người dùng click, hiển thị một Modal/Collapse chứa sẵn đoạn Prompt dưới đây, kèm theo một nút [Copy Prompt] để giáo viên dễ dàng sao chép và mang sang ChatGPT/Gemini xử lý trước khi dán vào app:
+  + NỘI DUNG PROMPT CẦN RENDER RA ĐỂ COPY:
+    "Bạn là một chuyên gia xử lý dữ liệu và nhận dạng tài liệu giáo dục/khoa học. Nhiệm vụ của bạn là nhận văn bản thô (từ PDF/Word bị lỗi OCR) và cấu trúc lại thành văn bản Markdown chuẩn xác nhất.
+
+    YÊU CẦU BẮT BUỘC MÀ BẠN PHẢI TUÂN THỦ:
+
+    1. XỬ LÝ NGẮT DÒNG BỊ LỖI (QUAN TRỌNG NHẤT):
+    - Tài liệu PDF gốc thường bị rớt dòng ngẫu nhiên ở giữa câu hoặc giữa một phương trình hóa học. 
+    - BẠN PHẢI NỐI CHÚNG LẠI thành 1 câu/1 đoạn hoàn chỉnh. Chỉ được phép xuống dòng khi kết thúc một câu trọn vẹn (có dấu chấm), kết thúc một phương trình độc lập, hoặc chuyển sang câu hỏi/đáp án mới.
+    - Tuyệt đối không để xảy ra tình trạng một phương trình hóa học bị bẻ làm 2 dòng.
+
+    2. ĐỊNH DẠNG HÓA HỌC CHUYÊN SÂU (KHÔNG IN NGHIÊNG):
+    - Các nguyên tố Hóa học KHÔNG ĐƯỢC IN NGHIÊNG giống như biến số Toán học. 
+    - Sử dụng chuẩn LaTeX \\mathrm{} hoặc \\ce{} (thư viện mhchem) để hiển thị. 
+    - Các phản ứng hữu cơ, công thức phân tử phải được ghi lại chính xác.
+      + SAI (in nghiêng): $C_3H_8O$, $H_2SO_4$
+      + ĐÚNG (thẳng đứng): $\\mathrm{C_3H_8O}$, $\\mathrm{H_2SO_4}$
+    - Điều kiện phản ứng trên mũi tên phải dùng cú pháp chuẩn. Ví dụ: $\\xrightarrow{t^\\circ, xt}$
+    - Khôi phục chính xác các phản ứng bị OCR nhận diện sai, đặc biệt là các phương trình có các chất phản ứng với Na, CuO, sinh ra kết tủa hoặc bay hơi.
+
+    3. ĐỊNH DẠNG TOÁN VÀ VẬT LÝ:
+    - Công thức nằm cùng dòng văn bản (inline) bọc trong $...$. Công thức độc lập bọc trong $$...$$.
+    - Khôi phục dấu góc \\widehat{ABC}, độ $^\\circ$, phân số \\frac{a}{b}.
+
+    4. BẢO TOÀN NỘI DUNG & LỌC \"RÁC\":
+    - Xóa bỏ Header, Footer, số trang, dấu chìm (Watermark).
+    - KHÔNG tự động giải bài tập. KHÔNG tóm tắt. Giữ nguyên 100% nội dung gốc.
+
+    5. CẤU TRÚC ĐỀ TRẮC NGHIỆM:
+    - Phải gom dòng để cấu trúc hiển thị theo dạng:
+      **Câu [X]:** [Nội dung câu hỏi kẹp công thức chuẩn]
+      A. [Đáp án]     B. [Đáp án]     C. [Đáp án]     D. [Đáp án]
+
+    ĐẦU RA: Chỉ trả về đoạn văn bản Markdown đã được xử lý hoàn chỉnh. KHÔNG CÓ BẤT KỲ CÂU CHÀO HỎI NÀO KHÁC."
 
 ===================================================================
 3. MỤC TIÊU SƯ PHẠM & ĐẶC TẢ ĐỐI TƯỢNG HỌC TẬP:
@@ -518,16 +581,53 @@ ${miniGamePrompts || '- Không có mini-game nào được chọn.'}
 ${designPrompt}
 
 ===================================================================
-8. YÊU CẦU ĐẦU RA MÃ NGUỒN & QUY TẮC BỘ NHỚ (OUTPUT DELIVERABLES):
+8. HỆ THỐNG TRANG CHỦ (DASHBOARD) & LOCALSTORAGE (BẮT BUỘC ĐÚNG TỪNG PIXEL):
+===================================================================
+1. CẤU TRÚC LAYOUT TỔNG THỂ (DASHBOARD LAYOUT):
+- Header (Thanh điều hướng trên cùng):
+  + Bên trái: Logo icon mũ cử nhân 🎓 và dòng chữ in đậm 'HỌC THUỘC THÔNG MINH'.
+  + Bên phải: Nút Giao diện Sáng/Tối (Sun/Moon icon), Nút 'Hướng dẫn & Trợ giúp', và Avatar người dùng.
+- Hero Section (Khu vực trung tâm nổi bật):
+  + Tiêu đề lớn (h1, text-3xl, font-bold): 'Bóc Tách Tài Liệu & Học Thuộc Thông Minh!'
+  + Đoạn mô tả (text-gray-500): 'Nhập hoặc dán tài liệu nguồn (văn bản thuần). Hệ thống sẽ tự động trích xuất các thẻ Flashcard hoàn chỉnh sẵn sàng ôn luyện.'
+  + Cụm 3 nút CTA: '[+] Tạo thẻ học thủ công' (Outline), '[⚡] Bóc Tách Tài Liệu' (Primary Solid, màu #06b6d4), '[▶] Hướng dẫn & Video' (Ghost).
+
+2. HỆ THỐNG TÌM KIẾM & PHÂN LOẠI (FILTER & SEARCH):
+- Thanh tìm kiếm: Ô input dài toàn chiều ngang, bo góc (rounded-xl), có icon Kính lúp (Search), placeholder: 'Tìm kiếm bài học học phần...'.
+- Thanh Menu Phân loại (Category Tabs): Danh sách các nút cuộn ngang (overflow-x-auto, whitespace-nowrap, no-scrollbar).
+  + BẮT BUỘC chứa CHÍNH XÁC các tab sau: [Tất cả], [🇬🇧 Ngoại Ngữ], [💻 Lập Trình & CNTT], [📐 Khoa Học Tự Nhiên], [📖 Xã Hội & Khảo Thí], [⭐ Yêu thích], [✏️ Do bạn tạo].
+  + Trạng thái Tab đang chọn (Active) phải đổi màu nền nổi bật (xám đen/chữ trắng).
+
+3. THIẾT KẾ THẺ BÀI HỌC (CARD GRID UI - EXACT PIXEL PERFECT):
+- Sử dụng CSS Grid (grid-cols-1 md:grid-cols-2 lg:grid-cols-3, gap-6).
+- UI Chi tiết của 1 Thẻ (Card):
+  + Khung nền trắng (hoặc đen/xám nếu Dark mode), bo góc (rounded-2xl), viền mảnh (border border-gray-200), hiệu ứng hover mượt (hover:-translate-y-1 hover:shadow-lg transition-all).
+  + Góc trên cùng: Tag chữ mờ in nghiêng (VD: 'Thủ công' hoặc 'AI Bóc Tách') căn phải.
+  + Tiêu đề (Title): Thẻ h3, chữ to, in đậm (font-bold), BẮT BUỘC viết hoa toàn bộ (uppercase) (VD: 'CAM 21 TEST 2', 'VẬT LÝ').
+  + Mô tả (Description): Chữ nhỏ (text-sm), màu xám (text-gray-500), tự động cắt chữ nếu quá 2 dòng (line-clamp-2).
+  + Đường line phân cách: Một đường kẻ ngang mảnh mờ (border-t border-gray-100) ngăn cách nội dung và footer.
+  + Footer thẻ (Góc dưới): Bên trái là Badge bo viền nền xám nhạt chứa 'Số lượng thuật ngữ' (VD: '44 thuật ngữ'). Bên phải là Ngày tạo (text-xs) và Nút icon Thùng rác (Trash2) màu xám (hover đỏ để xóa bài).
+
+4. KIẾN TRÚC DỮ LIỆU & LOGIC STATE (LOCALSTORAGE & REACT HOOKS):
+- Khởi tạo useState lưu mảng dữ liệu vào LocalStorage dưới key \`edu_decks_v2\`.
+- Cấu trúc Object 1 Deck: \`{ id: string, title: string, description: string, category: string, source: 'Thủ công' | 'AI', termCount: number, createdAt: string, flashcards: Array<{word, pos, ipa, defVi, defEn, example}> }\`.
+- Logic Search & Filter: Sử dụng useMemo trả về danh sách Deck. Logic lọc = Tên bài học chứa từ khóa VÀ (Category == tab hiện tại HOẶC tab là 'Tất cả').
+- Luồng Chuyển Trạng Thái (Navigation Flow):
+  + Click '[⚡] Bóc Tách Tài Liệu' -> Mở Modal Textarea (nhập text, tên bài, mô tả, chọn danh mục). Bấm Lưu -> Cập nhật LocalStorage -> Tự động đóng Modal & Render thẻ mới ở Trang chủ.
+  + Click vào 1 Thẻ Card bất kỳ -> Ẩn toàn bộ Trang chủ -> Mount Component GamificationArcade (Chứa thẻ 3D và 7 Mini-games), truyền mảng flashcards của thẻ đó vào làm Data học tập.
+  + Góc trên cùng của màn hình Học tập phải có nút '← Về Kho Bài Học' để unmount game, hiện lại Trang chủ.
+
+===================================================================
+9. YÊU CẦU ĐẦU RA MÃ NGUỒN & QUY TẮC BỘ NHỚ (OUTPUT DELIVERABLES):
 ===================================================================
 `;
 
   if (config.promptStrategy === 'modular_3_parts') {
-    const prompt1 = basePrompt + `- Đóng vai Frontend Developer. Bạn hãy TRÌNH BÀY bộ khung HTML chuẩn, nhúng thư viện (Tailwind, Lucide, PDF.js, Mammoth.js), thiết kế giao diện UI đầy đủ và khởi tạo bộ dữ liệu JSON (từ vựng/ngữ pháp) đã bóc tách.
+    const prompt1 = basePrompt + `- Đóng vai Frontend Developer. Bạn hãy TRÌNH BÀY bộ khung HTML chuẩn, nhúng thư viện (Tailwind, Lucide, Canvas Confetti, KaTeX), thiết kế giao diện UI đầy đủ và khởi tạo bộ dữ liệu JSON (từ vựng/ngữ pháp) đã bóc tách.
 - LỆNH CHỐT: Chỉ viết mã nguồn UI và Data. ĐỂ TRỐNG phần logic JavaScript của các chế độ học và mini-game (bạn có thể viết các thẻ HTML/CSS và các hàm rỗng). Tôi sẽ yêu cầu viết logic ở prompt tiếp theo.`;
 
     const prompt2 = `Chào bạn, đây là phần tiếp theo của ứng dụng học tập. Dựa vào bộ UI và JSON bạn đã viết ở phần trước, hãy VIẾT TIẾP logic JavaScript:
-1. Lập trình "Bộ máy đọc Link/PDF đa tầng" (URL Engine + File Parser) như đặc tả ban đầu.
+1. Lập trình "Cơ chế nhập liệu, Bóc tách & Bảo vệ cú pháp Toán học" (Textarea Parser & KaTeX) như đặc tả ban đầu.
 2. Viết code hoàn chỉnh cho 3 Mini-game / Chế độ học đầu tiên (ví dụ: Flashcard 3D, Active Recall, Tetris...).
 - LỆNH CHỐT: Viết nối tiếp vào file HTML/JS trước đó. Bạn chỉ cần viết mã xử lý sự kiện JavaScript cho phần này.`;
 
@@ -613,6 +713,7 @@ Yêu cầu định dạng JSON nghiêm ngặt:
 
 [QUY TẮC ĐỒNG BỘ GAME]: 
 - Dữ liệu này sẽ được nạp trực tiếp vào [Exam Mode] và [Speed True/False]. Khi người chơi chọn sai, hệ thống phải lập tức hiển thị nội dung từ trường 'trapAnalysis' để cảnh báo.`;
+      case 'sat':
       case 'ielts':
         return `[ĐẶC TẢ SƯ PHẠM: MỤC TIÊU IELTS ACADEMIC / SAT (BAND 7.0+ / 1400+)]
 - Định vị mục tiêu: Xây dựng kho từ vựng học thuật (Lexical Resource) và rèn luyện kỹ năng Paraphrase. 
@@ -681,6 +782,7 @@ Yêu cầu định dạng JSON nghiêm ngặt:
 - Định dạng trọng tâm: 100% trắc nghiệm khách quan chuẩn cấu trúc Bộ GD&ĐT.
 - Cơ chế giải thích: Mỗi câu hỏi trắc nghiệm BẮT BUỘC phải có mục "Phân tích bẫy sai kinh điển" (chỉ rõ vì sao phương án nhiễu lại dễ gây nhầm lẫn về thì, giới từ hoặc ngữ âm).
 - Dạng bài bắt buộc: Kiểm tra cặp từ đồng nghĩa/trái nghĩa, câu hỏi giao tiếp tình huống, tìm lỗi sai ngữ pháp và nhận diện quy tắc trọng âm/phát âm đuôi -s/ed.`;
+    case 'sat':
     case 'ielts':
       return `[ĐẶC TẢ SƯ PHẠM: MỤC TIÊU IELTS ACADEMIC / SAT (BAND 7.0+ / 1400+)]
 - Định vị mục tiêu: Xây dựng kho từ vựng học thuật (Lexical Resource) và rèn luyện kỹ năng Paraphrase. 
@@ -948,13 +1050,13 @@ ${activeUtilities.length > 0 ? activeUtilities.join('\n') : '  + Giao diện tin
 
 function getTechnicalRulesPrompt(config: PromptConfig): string {
   if (config.outputFormat === 'single_file_html') {
-    return `- Đóng gói toàn bộ trong DUY NHẤT 1 FILE HTML hoàn chỉnh (<!DOCTYPE html> ... </html>), nhúng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>), Lucide Icons CDN (<script src="https://unpkg.com/lucide@latest"></script>), Canvas Confetti CDN, PDF.js CDN (<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>) và Mammoth.js CDN (<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>).
+    return `- Đóng gói toàn bộ trong DUY NHẤT 1 FILE HTML hoàn chỉnh (<!DOCTYPE html> ... </html>), nhúng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>), Lucide Icons CDN (<script src="https://unpkg.com/lucide@latest"></script>), Canvas Confetti CDN, và thư viện KaTeX CDN (cả CSS và JS).
 - BẢO VỆ & DỰ PHÒNG AN TOÀN (Fallback CDN & Icons): Trong trường hợp CDN Lucide Icons không tải được, mã nguồn PHẢI tự động hiển thị biểu tượng Unicode/Emoji (🔊, 🔄, ✔️, ❌, 🎮, 💡, ⏱️, 🏆, v.v.) để giao diện luôn hiển thị trọn vẹn, không bị lỗi nút trống.
 - KHÔNG ĐƯỢC viết tắt, KHÔNG dùng placeholder (như // TODO, // tự viết tiếp). Toàn bộ 7 game và các chế độ học thuật phải được viết code JavaScript xử lý sự kiện thật 100%, chạy mượt mà ngay trên trình duyệt.
 - Sử dụng Web Speech API (window.speechSynthesis với lang='vi-VN') phát âm tiếng Việt chuẩn và Web Audio API (AudioContext) để tạo hiệu ứng âm thanh tiếng bíp/ding/jump/goal khi chơi game.
 - Giao diện đáp ứng 100% (Responsive) trên cả điện thoại và máy tính, hỗ trợ chế độ Sáng / Tối (Light & Dark Mode).`;
   } else if (config.outputFormat === 'react_applet') {
-    return `- Cấu trúc React + TypeScript + Tailwind CSS + Lucide Icons.
+    return `- Cấu trúc React + TypeScript + Tailwind CSS + Lucide Icons + KaTeX.
 - Tách biệt rõ ràng các component: Header, NavigationTabs, AcademicModes, GamificationArcade (với từng Canvas engine component riêng biệt), và ProgressDashboard.
 - BẢO VỆ & DỰ PHÒNG AN TOÀN: Có fallback hiển thị khi tải font/icon hoặc tài nguyên media.
 - Sử dụng React hooks (useState, useEffect, useRef, useCallback) xử lý trạng thái mượt mà, lưu trữ LocalStorage và Web Audio API tổng hợp âm thanh hiệu ứng game.`;

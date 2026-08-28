@@ -3,6 +3,7 @@ export type GradeLevel = 'lop10' | 'lop11' | 'lop12';
 export type ExamTarget = 
   | 'thptqg'
   | 'ielts'
+  | 'sat'
   | 'vact'
   | 'giaotiep';
 

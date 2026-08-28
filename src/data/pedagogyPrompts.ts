@@ -19,6 +19,10 @@ export const PEDAGOGY_TARGET_PROMPTS = {
 - Định hướng tư duy: Đánh giá năng lực ứng dụng ngôn ngữ và tư duy logic, KHÔNG kiểm tra mẹo ngữ pháp vụn vặt.
 - Mục tiêu kiến thức: Kiểm tra khả năng đọc hiểu nhanh các đoạn văn khoa học/xã hội (150 - 250 từ), xác định nghĩa của từ trong ngữ cảnh cụ thể, phát hiện câu vi phạm tính mạch lạc logic.
 - Thiết kế bài tập: Bài tập đọc hiểu suy luận ý chính, câu hỏi chọn từ điền vào chỗ trống dựa trên sự tương thích ngữ nghĩa và sắc thái biểu cảm.`,
+  sat: `[ĐẶC TẢ SƯ PHẠM: DIGITAL SAT (MỤC TIÊU 1400+)]
+- Mục tiêu kiến thức: Trọng tâm rèn luyện Reading & Writing và Vocabulary in Context. Tập trung vào tư duy logic văn bản, suy luận bằng chứng, và xác định mục đích của tác giả.
+- Cơ chế bóc tách: Ưu tiên trích xuất từ vựng hàn lâm từ các văn bản văn học, lịch sử, và khoa học. Phân tích chi tiết tại sao các phương án nhiễu (distractors) lại sai theo tư duy của SAT.
+- Ứng dụng thực tế: Câu ví dụ và bài tập phải bám sát cấu trúc Digital SAT (đoạn văn ngắn, câu hỏi tập trung vào một kỹ năng duy nhất).`,
   ielts: `[ĐẶC TẢ SƯ PHẠM: IELTS ACADEMIC]
 - Mục tiêu kiến thức: Trích xuất từ vựng theo khung Academic Word List (AWL), cung cấp tối thiểu 2-3 Cụm Collocations học thuật nâng cao cho mỗi từ vựng.
 - Kỹ thuật Paraphrasing: Với mỗi từ/câu, cung cấp thêm các cách diễn đạt đồng nghĩa tương đương ở các cấp độ Band điểm khác nhau (Band 5.5 vs Band 7.5+).

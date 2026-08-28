@@ -284,6 +284,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   ? config.examTargets.map(t => [
                       { id: 'thptqg', label: 'THPT Quốc Gia' },
                       { id: 'ielts', label: 'IELTS Academic' },
+                      { id: 'sat', label: 'Digital SAT' },
                       { id: 'vact', label: 'ĐGNL (VACT)' },
                       { id: 'giaotiep', label: 'Giao tiếp thực tế' },
                     ].find(item => item.id === t)?.label).filter(Boolean).join(', ')
@@ -297,6 +298,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                 {[
                   { id: 'thptqg', label: 'THPT Quốc Gia', icon: '🏛️' },
                   { id: 'ielts', label: 'IELTS Academic', icon: '🎓' },
+                  { id: 'sat', label: 'Digital SAT', icon: '📝' },
                   { id: 'vact', label: 'ĐGNL (VACT)', icon: '📊' },
                   { id: 'giaotiep', label: 'Giao tiếp thực tế', icon: '🗣️' },
                 ].map((target) => {
