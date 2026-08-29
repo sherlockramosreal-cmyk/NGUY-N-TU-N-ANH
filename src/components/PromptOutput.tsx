@@ -122,10 +122,14 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
   return (
     <div
       id="rightColumn"
-      className={`lg:col-span-5 flex flex-col rounded-2xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-xl overflow-hidden transition-all duration-300 ${isExpanded ? "fixed inset-0 z-[100] border-0 rounded-none h-[100dvh]" : "border border-zinc-200 dark:border-zinc-800 h-[60vh] lg:h-[calc(100vh-2rem)] lg:sticky lg:top-4 relative"}`}
+      className={`lg:col-span-5 flex flex-col rounded-2xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-xl overflow-hidden transition-all duration-300 ${
+        isExpanded
+          ? "fixed inset-0 z-[100] border-0 rounded-none h-[100dvh] w-full flex flex-col"
+          : "border border-zinc-200 dark:border-zinc-800 h-full min-h-0 relative flex flex-col"
+      }`}
     >
       {/* Top Bar with Live Indicator & Action Buttons */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
+      <div className="px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black dark:bg-white opacity-75"></span>
@@ -138,7 +142,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
         </div>
 
         {isModular && (
-          <div className="flex items-center bg-white dark:bg-zinc-950 p-0.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] ml-auto mr-3">
+          <div className="flex items-center bg-white dark:bg-zinc-950 p-0.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] ml-auto mr-3 shrink-0">
             {allPrompts.map((_, idx) => (
               <button
                 key={idx}
@@ -155,7 +159,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
         )}
 
         {/* View mode toggle tabs */}
-        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg text-[11px] ml-auto md:ml-0">
+        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg text-[11px] ml-auto md:ml-0 shrink-0">
           <button
             onClick={() => setViewMode('prompt')}
             className={`px-3 py-1.5 rounded-md font-medium transition flex items-center gap-1.5 ${
@@ -201,7 +205,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       </div>
 
       {/* Stats Bar */}
-      <div className="px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+      <div className="px-4 py-1.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 font-mono shrink-0">
         <div className="flex items-center gap-3">
           <span>
             Ký tự: <strong className="text-zinc-800 dark:text-zinc-100">{charCount.toLocaleString()}</strong>
@@ -228,7 +232,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
 
       {/* Empty State Warning Alert */}
       {isEmpty && (
-        <div className="px-4 py-2.5 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-100 text-xs flex items-center gap-2 animate-pulse">
+        <div className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-100 text-xs flex items-center gap-2 animate-pulse shrink-0">
           <AlertTriangle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
           <span>
             <strong>Cảnh báo:</strong> Bạn chưa chọn Chế độ học thuật hoặc Mini-game nào. Vui lòng tick chọn ít nhất 1 mục bên trái để sinh ứng dụng hoàn chỉnh.
@@ -253,18 +257,18 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       )}
 
       {/* Main Content Terminal */}
-      <div className="flex-1 p-4 font-mono text-xs overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-700 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
+      <div className="flex-1 min-h-0 p-3 sm:p-4 font-mono text-xs overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-700 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
         {viewMode === 'prompt' && (
-          <pre className="w-full break-words whitespace-pre-wrap font-mono text-base md:text-[11px] text-zinc-600 dark:text-zinc-400 select-text">
+          <pre className="w-full break-words whitespace-pre-wrap font-mono text-xs md:text-[11px] text-zinc-700 dark:text-zinc-300 select-text">
             {currentPromptContent}
           </pre>
         )}
 
         {viewMode === 'preview' && (
-          <div className="font-sans text-base md:text-xs space-y-4 text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-none">
+          <div className="font-sans text-xs space-y-4 text-zinc-700 dark:text-zinc-300 leading-relaxed max-w-none">
             {currentPromptContent.split('===================================================================').map((section, idx) => (
               <div key={idx} className="p-3.5 rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800">
-                <pre className="font-sans w-full break-words whitespace-pre-wrap text-base md:text-xs text-zinc-800 dark:text-zinc-100">
+                <pre className="font-sans w-full break-words whitespace-pre-wrap text-xs text-zinc-800 dark:text-zinc-100">
                   {section.trim()}
                 </pre>
               </div>
@@ -273,37 +277,37 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
         )}
 
         {viewMode === 'json' && (
-          <pre className="w-full break-words whitespace-pre-wrap font-mono text-base md:text-[11px] text-zinc-600 dark:text-zinc-400 select-text">
+          <pre className="w-full break-words whitespace-pre-wrap font-mono text-xs md:text-[11px] text-zinc-700 dark:text-zinc-300 select-text">
             {jsonPreview}
           </pre>
         )}
       </div>
 
       {/* Model AI Context Advisory */}
-      <div className="px-4 py-2 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-start gap-1.5">
+      <div className="px-3.5 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-start gap-1.5 shrink-0">
         <Info className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
-        <span>
-          <strong className="text-zinc-600 dark:text-zinc-400">Mẹo chọn AI Model:</strong> Master Prompt chứa đặc tả kỹ thuật chi tiết (~{estTokens.toLocaleString()} tokens). Khuyến nghị dán vào các mô hình có Context Window lớn (<strong>Gemini 1.5 Pro, Claude 3.5 Sonnet, GPT-4o</strong>) để xuất 100% mã nguồn không bị ngắt quãng.
+        <span className="leading-tight">
+          <strong className="text-zinc-600 dark:text-zinc-400">Mẹo chọn AI Model:</strong> Master Prompt chứa đặc tả chi tiết (~{estTokens.toLocaleString()} tokens). Dán vào <strong>Gemini 1.5 Pro, Claude 3.5 Sonnet, GPT-4o</strong> để xuất 100% mã nguồn.
         </span>
       </div>
 
       {/* Bottom Actions Bar */}
-      <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
+      <div className="shrink-0 sticky bottom-0 bg-white dark:bg-zinc-950 z-20 border-t border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 shadow-xs">
         <button
           type="button"
           onClick={onOpenSimulator}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold transition hover:scale-102 active:scale-98"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold transition hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
         >
           <Sparkles className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
           <span>Chạy mô phỏng Sandbox</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap shrink-0">
           <button
             type="button"
             onClick={() => handleDownload('txt')}
             title="Tải file Text (.txt)"
-            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-medium transition"
+            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-medium transition shrink-0 whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5" />
             <span>.TXT</span>
@@ -312,7 +316,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             type="button"
             onClick={() => handleDownload('md')}
             title="Tải file Markdown (.md)"
-            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-medium transition"
+            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-medium transition shrink-0 whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5" />
             <span>.MD</span>
@@ -320,7 +324,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
           <button
             type="button"
             onClick={handleCopy}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition shadow-md shrink-0 whitespace-nowrap ${
               copied
                 ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
                 : isEmpty
@@ -345,7 +349,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             href="https://aistudio.google.com/apps" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 hover:scale-102 active:scale-98"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition shadow-md bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
           >
             <span>🚀 Mở AI Studio</span>
           </a>

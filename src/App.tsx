@@ -108,7 +108,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white flex flex-col font-sans antialiased select-none">
+    <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white font-sans antialiased select-none">
       {/* Header */}
       <Header
         onSelectPreset={handleSelectPreset}
@@ -118,7 +118,7 @@ export default function App() {
       />
 
       {/* Main Split-Screen Workspace (58% Left - 42% Right) */}
-      <main className="flex-1 w-full max-w-[1720px] mx-auto p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
+      <main className="flex-1 min-h-0 w-full max-w-[1720px] mx-auto p-2.5 sm:p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 overflow-y-auto lg:overflow-hidden">
         {/* Left Column: Configuration & Pedagogy Controls (7 cols = 58.3%) */}
         <ConfigurationArea
           config={config}

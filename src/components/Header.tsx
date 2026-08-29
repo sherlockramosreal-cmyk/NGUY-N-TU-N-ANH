@@ -53,7 +53,7 @@ export default function Header({ onSelectPreset, onReset, onOpenSimulator, onOpe
   };
 
   return (
-    <header className="h-16 flex-none border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between z-20">
+    <header className="h-16 shrink-0 flex-none border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between z-20">
       {/* Brand */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white dark:text-black shadow-md shadow-sm">
