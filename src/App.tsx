@@ -10,6 +10,7 @@ import PromptOutput from './components/PromptOutput';
 import LiveSimulatorModal from './components/LiveSimulatorModal';
 import DocumentExtractorModal from './components/DocumentExtractorModal';
 import ToastContainer, { toast } from './components/Toast';
+import { Analytics } from '@vercel/analytics/react';
 import { PromptConfig, GradeLevel, ExamTarget, StudyMode, MiniGameId, ExtractedCard } from './types';
 import { compileMasterPrompt, PRESET_TEMPLATES, THEORY_PRESETS, SAMPLE_VOCABULARY_DEFAULT } from './data/promptTemplates';
 
@@ -155,6 +156,7 @@ export default function App() {
       />
       
       <ToastContainer />
+      <Analytics />
     </div>
   );
 }

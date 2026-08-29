@@ -18,6 +18,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { PromptConfig } from '../types';
+import { trackExportAction } from '../utils/analytics';
 
 interface PromptOutputProps {
   promptContent: string | string[];
@@ -53,6 +54,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       await navigator.clipboard.writeText(currentPromptContent);
       setCopied(true);
       setCopyWarning(null);
+      trackExportAction('copy_prompt');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       const textarea = document.createElement('textarea');
@@ -63,6 +65,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       document.body.removeChild(textarea);
       setCopied(true);
       setCopyWarning(null);
+      trackExportAction('copy_prompt');
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -73,6 +76,8 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       setTimeout(() => setCopyWarning(null), 4000);
       return;
     }
+
+    trackExportAction(format === 'txt' ? 'download_txt' : 'download_md');
 
     const filename = isModular 
       ? `Prompt_TaoWeb_TuHoc_${config.gradeLevel}_Part${activeTab + 1}_${Date.now()}.${format}`
@@ -295,7 +300,10 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       <div className="shrink-0 sticky bottom-0 bg-white dark:bg-zinc-950 z-20 border-t border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 shadow-xs">
         <button
           type="button"
-          onClick={onOpenSimulator}
+          onClick={() => {
+            trackExportAction('open_simulator');
+            onOpenSimulator();
+          }}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold transition hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
         >
           <Sparkles className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
@@ -349,6 +357,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             href="https://aistudio.google.com/apps" 
             target="_blank" 
             rel="noopener noreferrer"
+            onClick={() => trackExportAction('open_aistudio')}
             className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition shadow-md bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
           >
             <span>🚀 Mở AI Studio</span>

@@ -55,6 +55,12 @@ import {
 } from '../data/promptTemplates';
 import { extractTextFromFile } from '../utils/fileParser';
 import { toast } from './Toast';
+import {
+  trackSelectTarget,
+  trackChangeUI,
+  trackColorChangeDebounced,
+  trackToggleGame
+} from '../utils/analytics';
 
 interface ConfigurationAreaProps {
   config: PromptConfig;
@@ -155,39 +161,51 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
   };
 
   const toggleExamTarget = (target: ExamTarget) => {
-    const next = config.examTargets.includes(target)
-      ? config.examTargets.filter((t) => t !== target)
-      : [...config.examTargets, target];
+    const isChecked = !config.examTargets.includes(target);
+    const next = isChecked
+      ? [...config.examTargets, target]
+      : config.examTargets.filter((t) => t !== target);
+    trackSelectTarget(target, { type: 'exam_target', status: isChecked ? 'added' : 'removed' });
     updateConfig('examTargets', next);
   };
 
   const toggleStudyMode = (mode: StudyMode) => {
-    const next = config.studyModes.includes(mode)
-      ? config.studyModes.filter((m) => m !== mode)
-      : [...config.studyModes, mode];
+    const isChecked = !config.studyModes.includes(mode);
+    const next = isChecked
+      ? [...config.studyModes, mode]
+      : config.studyModes.filter((m) => m !== mode);
+    trackToggleGame(mode, isChecked, 'study_mode');
     updateConfig('studyModes', next);
   };
 
   const selectAllStudyModes = () => {
-    updateConfig('studyModes', Object.keys(STUDY_MODE_CONFIGS) as StudyMode[]);
+    const all = Object.keys(STUDY_MODE_CONFIGS) as StudyMode[];
+    all.forEach(m => trackToggleGame(m, true, 'study_mode'));
+    updateConfig('studyModes', all);
   };
 
   const clearAllStudyModes = () => {
+    config.studyModes.forEach(m => trackToggleGame(m, false, 'study_mode'));
     updateConfig('studyModes', []);
   };
 
   const toggleGame = (gameId: MiniGameId) => {
-    const next = config.selectedGames.includes(gameId)
-      ? config.selectedGames.filter((g) => g !== gameId)
-      : [...config.selectedGames, gameId];
+    const isChecked = !config.selectedGames.includes(gameId);
+    const next = isChecked
+      ? [...config.selectedGames, gameId]
+      : config.selectedGames.filter((g) => g !== gameId);
+    trackToggleGame(gameId, isChecked, 'mini_game');
     updateConfig('selectedGames', next);
   };
 
   const selectAllGames = () => {
-    updateConfig('selectedGames', Object.keys(MINI_GAME_CONFIGS) as MiniGameId[]);
+    const all = Object.keys(MINI_GAME_CONFIGS) as MiniGameId[];
+    all.forEach(g => trackToggleGame(g, true, 'mini_game'));
+    updateConfig('selectedGames', all);
   };
 
   const clearAllGames = () => {
+    config.selectedGames.forEach(g => trackToggleGame(g, false, 'mini_game'));
     updateConfig('selectedGames', []);
   };
 
@@ -255,6 +273,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                       type="button"
                       key={item.id}
                       onClick={() => {
+                        trackSelectTarget(item.id, { label: item.label, type: 'grade_level' });
                         updateConfig('gradeLevel', item.id as GradeLevel);
                         setIsGradeDropdownOpen(false);
                       }}
@@ -570,6 +589,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   key={theme.id}
                   title={theme.name}
                   onClick={() => {
+                    trackChangeUI('theme', theme.name, { themeId: theme.id });
                     onChange({
                       ...config,
                       colorTheme: theme.id as ColorTheme,
@@ -622,6 +642,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   type="color"
                   value={config.primaryColor}
                   onChange={(e) => {
+                    trackColorChangeDebounced('primary', e.target.value);
                     onChange({
                       ...config,
                       primaryColor: e.target.value,
@@ -639,6 +660,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   type="text"
                   value={config.primaryColor}
                   onChange={(e) => {
+                    trackColorChangeDebounced('primary', e.target.value);
                     onChange({
                       ...config,
                       primaryColor: e.target.value,
@@ -658,6 +680,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   type="color"
                   value={config.accentColor}
                   onChange={(e) => {
+                    trackColorChangeDebounced('accent', e.target.value);
                     onChange({
                       ...config,
                       accentColor: e.target.value,
@@ -675,6 +698,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   type="text"
                   value={config.accentColor}
                   onChange={(e) => {
+                    trackColorChangeDebounced('accent', e.target.value);
                     onChange({
                       ...config,
                       accentColor: e.target.value,
@@ -706,13 +730,17 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                 <div
                   key={style.id}
                   id={`style-${style.id}`}
-                  onClick={() => updateConfig('uiStyle', style.id as UIStyle)}
+                  onClick={() => {
+                    trackChangeUI('style', style.name, { styleId: style.id });
+                    updateConfig('uiStyle', style.id as UIStyle);
+                  }}
                   role="radio"
                   aria-checked={isSelected}
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === ' ' || e.key === 'Enter') {
                       e.preventDefault();
+                      trackChangeUI('style', style.name, { styleId: style.id });
                       updateConfig('uiStyle', style.id as UIStyle);
                     }
                   }}
@@ -786,13 +814,17 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   <div
                     key={font.id}
                     id={`font-${font.id}`}
-                    onClick={() => updateConfig('fontChoice', font.id as FontChoice)}
+                    onClick={() => {
+                      trackChangeUI('font', font.name, { fontId: font.id });
+                      updateConfig('fontChoice', font.id as FontChoice);
+                    }}
                     role="radio"
                     aria-checked={isSelected}
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === ' ' || e.key === 'Enter') {
                         e.preventDefault();
+                        trackChangeUI('font', font.name, { fontId: font.id });
                         updateConfig('fontChoice', font.id as FontChoice);
                       }
                     }}
@@ -865,13 +897,17 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
                   <div
                     key={font.id}
                     id={`font-${font.id}`}
-                    onClick={() => updateConfig('fontChoice', font.id as FontChoice)}
+                    onClick={() => {
+                      trackChangeUI('font', font.name, { fontId: font.id });
+                      updateConfig('fontChoice', font.id as FontChoice);
+                    }}
                     role="radio"
                     aria-checked={isSelected}
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === ' ' || e.key === 'Enter') {
                         e.preventDefault();
+                        trackChangeUI('font', font.name, { fontId: font.id });
                         updateConfig('fontChoice', font.id as FontChoice);
                       }
                     }}
