@@ -90,7 +90,50 @@ export default function DocumentExtractorModal({
   const [customTopicTitle, setCustomTopicTitle] = useState(config.lessonTopic || SAMPLE_DOCUMENTS[0].topic);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [showAIPrompt, setShowAIPrompt] = useState(false);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopyAIPrompt = async () => {
+    const prompt = `Bạn là một chuyên gia AI xử lý dữ liệu tài liệu giáo dục và khoa học. Nhiệm vụ của bạn là nhận văn bản gốc từ PDF/Word (thường bị lỗi OCR, sai cột, rớt dòng, vỡ công thức) và tái tạo lại thành văn bản Markdown kết hợp LaTeX hoàn hảo nhất.
+
+BẠN BẮT BUỘC PHẢI TUÂN THỦ 5 QUY TẮC SẮT ĐÁ SAU:
+
+1. QUY TẮC BỐ CỤC & BẢO TOÀN DỮ LIỆU (CHỐNG LỘN XỘN, CHỐNG LƯỜI):
+- Đọc cột: Nếu trang chia 2 hoặc nhiều cột, BẮT BUỘC đọc hết toàn bộ cột trái từ trên xuống dưới, rồi mới đọc tiếp cột phải. TUYỆT ĐỐI KHÔNG đọc vắt ngang dòng.
+- Bảo toàn 100%: Trích xuất ĐẦY ĐỦ 100% nội dung. KHÔNG tóm tắt, KHÔNG cắt xén, KHÔNG tự giải bài tập.
+- Dọn rác: Tự động xóa số trang, header, footer, dấu chìm (watermark), chữ "Mã đề", "Trang X/Y".
+
+2. QUY TẮC NỐI DÒNG (CHỐNG ĐỨT ĐOẠN):
+- Tự động ghép các dòng bị OCR ngắt vô cớ lại thành một câu hoặc một phương trình liền mạch.
+- Chỉ xuống dòng khi: kết thúc câu hỏi, chuyển sang đáp án (A, B, C, D), hoặc chuyển sang phương trình độc lập.
+- TUYỆT ĐỐI KHÔNG để một phương trình bị cắt làm 2 dòng.
+
+3. QUY TẮC HÓA HỌC CHUYÊN SÂU (CHỐNG LỖI HIỂN THỊ LATEX):
+- Ký hiệu nguyên tố/phân tử: KHÔNG ĐƯỢC in nghiêng. Bắt buộc dùng \\mathrm{}. (VD: \\mathrm{C_3H_8O}, \\mathrm{H_2SO_4}).
+- Chuỗi Hữu cơ: Bọc toàn bộ chuỗi trong \\mathrm{} để dấu gạch ngang (-) không bị biến thành dấu trừ toán học. (VD: \\mathrm{CH_3-CH_2-OH} hoặc \\mathrm{CH_2=CH-COOH}).
+- Ion & Điện tích: Dấu điện tích phải nằm ở chỉ số trên (superscript) và ĐỨNG SAU con số. (VD: \\mathrm{Fe^{3+}}, \\mathrm{SO_4^{2-}}, \\mathrm{NH_4^+}).
+- Mũi tên & Điều kiện: Chữ ghi điều kiện phản ứng BẮT BUỘC phải bọc trong \\text{} để không bị lỗi font LaTeX. (VD: \\xrightarrow{\\text{t}^\\circ, \\text{xt}}, \\xrightleftharpoons[\\text{men}]{\\text{t}^\\circ}). Mũi tên kết tủa \\downarrow, bay hơi \\uparrow.
+- Khôi phục OCR Hóa: Các chữ bị tách rời phải nối lại ("N a" -> "Na", "C u O" -> "CuO"). Các ký hiệu sai như "t 0", "t o", "*C" BẮT BUỘC sửa thành ^\\circ\\mathrm{C}.
+
+4. QUY TẮC TOÁN & VẬT LÝ (TỪ ĐIỂN LATEX):
+- Công thức trong dòng bọc bằng cặp dấu $...$, công thức độc lập bọc bằng cặp dấu $$...$$.
+- Bảng chữ cái Hy Lạp: \\alpha, \\beta, \\gamma, \\Delta, \\pi, \\omega (không dùng w), \\rho (không dùng p), \\lambda, \\mu.
+- Đơn vị đo: ^\\circ\\mathrm{C} (độ C), ^\\circ (độ góc), \\Omega (Ohm), \\mathring{A} (Angstrom), \\mu\\mathrm{F}.
+- Đại số & Hình học: Phân số \\frac{a}{b}, Căn \\sqrt{x}, Tích phân \\int, Giới hạn \\lim, Vô cực \\infty, Góc \\widehat{ABC}, Tam giác \\triangle, Vuông góc \\perp, Song song \\parallel, Vector \\vec{v}.
+- Hệ phương trình/Ma trận: Bắt buộc dùng \\begin{cases} ... \\end{cases} hoặc \\begin{pmatrix} ... \\end{pmatrix}.
+
+5. QUY TẮC ĐỊNH DẠNG ĐỀ TRẮC NGHIỆM:
+- Trình bày đáp án trắc nghiệm thật ngăn nắp theo định dạng chuẩn sau (Mỗi đáp án A, B, C, D đều phải xuống dòng):
+  **Câu [X]:** [Nội dung câu hỏi]
+  A. [Đáp án]
+  B. [Đáp án]
+  C. [Đáp án]
+  D. [Đáp án]
+
+KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giải thích, không xin chào, không có bất kỳ văn bản giao tiếp nào khác ngoài nội dung tài liệu đã xử lý.`;
+    await navigator.clipboard.writeText(prompt);
+    toast.success('Đã sao chép AI Prompt! Hãy mang dán vào ChatGPT/Gemini.');
+  };
 
 
   const handleProcessUploadedDoc = async (file: File) => {
@@ -371,6 +414,14 @@ export default function DocumentExtractorModal({
                     <Sparkles className="w-3 h-3" />
                     Bôi đen & Bóc tách
                   </button>
+                  <button
+                    onClick={() => setShowAIPrompt(!showAIPrompt)}
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition flex items-center gap-1 border ${showAIPrompt ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'}`}
+                    title="Mẹo dùng AI dọn dẹp dữ liệu"
+                  >
+                    <Sparkles className="w-3 h-3 text-purple-500" />
+                    Mẹo: Dọn dẹp dữ liệu PDF bằng AI
+                  </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -404,6 +455,26 @@ export default function DocumentExtractorModal({
                   </button>
                 </div>
               </div>
+
+              {showAIPrompt && (
+                <div className="mb-3 p-3 rounded-xl bg-purple-50/50 border border-purple-100/50 flex flex-col gap-2 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-900">
+                      Prompt Khôi phục dữ liệu siêu sạch dành cho ChatGPT / Gemini
+                    </span>
+                    <button
+                      onClick={handleCopyAIPrompt}
+                      className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold rounded-lg transition flex items-center gap-1"
+                    >
+                      <Clipboard className="w-3 h-3" />
+                      Copy Prompt
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-purple-700/80 leading-relaxed">
+                    Sử dụng Prompt này cùng với file PDF / ảnh chụp màn hình giáo trình của bạn để AI tự động dọn dẹp các lỗi ngắt dòng, lỗi font Toán/Lý/Hóa, và trả về định dạng hoàn hảo nhất trước khi dán vào đây.
+                  </p>
+                </div>
+              )}
 
               {fileErrorMsg && (
                 <div className="mb-2 p-2 rounded-lg bg-rose-50 border border-rose-200 text-[11px] text-rose-600 flex items-center gap-1.5">

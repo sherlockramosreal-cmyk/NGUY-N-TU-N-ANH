@@ -510,54 +510,41 @@ ${technicalPrompt}
   + NỘI DUNG PROMPT CẦN RENDER RA ĐỂ COPY:
     "Bạn là một chuyên gia AI xử lý dữ liệu tài liệu giáo dục và khoa học. Nhiệm vụ của bạn là nhận văn bản gốc từ PDF/Word (thường bị lỗi OCR, sai cột, rớt dòng, vỡ công thức) và tái tạo lại thành văn bản Markdown kết hợp LaTeX hoàn hảo nhất.
 
-    BẠN BẮT BUỘC PHẢI TUÂN THỦ CÁC QUY TẮC SẮT ĐÁ SAU:
+    BẠN BẮT BUỘC PHẢI TUÂN THỦ 5 QUY TẮC SẮT ĐÁ SAU:
 
-    1. QUY TẮC TRỊ LỖI ĐỌC CỘT (CHỐNG LỘN XỘN):
-    - Nếu trang tài liệu chia làm 2 hoặc nhiều cột dọc: BẠN PHẢI đọc hết toàn bộ nội dung cột bên trái từ trên xuống dưới, rồi mới được đọc tiếp sang cột bên phải.
-    - TUYỆT ĐỐI KHÔNG đọc vắt ngang dòng từ cột trái sang cột phải.
+    1. QUY TẮC BỐ CỤC & BẢO TOÀN DỮ LIỆU (CHỐNG LỘN XỘN, CHỐNG LƯỜI):
+    - Đọc cột: Nếu trang chia 2 hoặc nhiều cột, BẮT BUỘC đọc hết toàn bộ cột trái từ trên xuống dưới, rồi mới đọc tiếp cột phải. TUYỆT ĐỐI KHÔNG đọc vắt ngang dòng.
+    - Bảo toàn 100%: Trích xuất ĐẦY ĐỦ 100% nội dung. KHÔNG tóm tắt, KHÔNG cắt xén, KHÔNG tự giải bài tập.
+    - Dọn rác: Tự động xóa số trang, header, footer, dấu chìm (watermark), chữ \"Mã đề\", \"Trang X/Y\".
 
-    2. QUY TẮC TRỊ LỖI RỚT DÒNG (CHỐNG ĐỨT ĐOẠN):
-    - Tự động ghép các dòng bị đứt lại thành một câu văn hoặc một phương trình liền mạch.
-    - Chỉ xuống dòng khi: kết thúc câu hỏi, chuyển sang đáp án (A, B, C, D), hoặc chuyển sang phương trình độc lập. KHÔNG BAO GIỜ bẻ phương trình làm 2 dòng.
+    2. QUY TẮC NỐI DÒNG (CHỐNG ĐỨT ĐOẠN):
+    - Tự động ghép các dòng bị OCR ngắt vô cớ lại thành một câu hoặc một phương trình liền mạch.
+    - Chỉ xuống dòng khi: kết thúc câu hỏi, chuyển sang đáp án (A, B, C, D), hoặc chuyển sang phương trình độc lập.
+    - TUYỆT ĐỐI KHÔNG để một phương trình bị cắt làm 2 dòng.
 
-    3. QUY TẮC ĐỊNH DẠNG HÓA HỌC CHUYÊN SÂU:
-    - Ký hiệu nguyên tố, phân tử KHÔNG ĐƯỢC IN NGHIÊNG. Phải dùng \\mathrm{} (VD: SAI: $C_3H_8O$ / ĐÚNG: $\\mathrm{C_3H_8O}$).
-    - Trị lỗi khoảng trắng OCR: Nối các chữ tách rời (VD: \"N a\" -> \"Na\", \"C u O\" -> \"CuO\", \"C T C T\" -> \"CTCT\").
-    - Ký hiệu đồng vị: Viết đúng dạng ^{A}_{Z}\\mathrm{X} (VD: ^{14}_{6}\\mathrm{C}, ^{235}_{92}\\mathrm{U}).
-    - Liên kết hóa học: Liên kết đơn (-), đôi (=), ba (\\equiv). Không nhầm liên kết ba với dấu bằng.
-    - Mũi tên phản ứng: Chiều thuận (\\rightarrow), Thuận nghịch (\\rightleftharpoons), Kết tủa (\\downarrow), Bay hơi (\\uparrow). Điều kiện trên mũi tên dùng \\xrightarrow{t^\\circ, p, xt}.
-    - Trạng thái chất: \\mathrm{(s)} rắn, \\mathrm{(l)} lỏng, \\mathrm{(g)} khí, \\mathrm{(aq)} dung dịch.
+    3. QUY TẮC HÓA HỌC CHUYÊN SÂU (CHỐNG LỖI HIỂN THỊ LATEX):
+    - Ký hiệu nguyên tố/phân tử: KHÔNG ĐƯỢC in nghiêng. Bắt buộc dùng \\mathrm{}. (VD: \\mathrm{C_3H_8O}, \\mathrm{H_2SO_4}).
+    - Chuỗi Hữu cơ: Bọc toàn bộ chuỗi trong \\mathrm{} để dấu gạch ngang (-) không bị biến thành dấu trừ toán học. (VD: \\mathrm{CH_3-CH_2-OH} hoặc \\mathrm{CH_2=CH-COOH}).
+    - Ion & Điện tích: Dấu điện tích phải nằm ở chỉ số trên (superscript) và ĐỨNG SAU con số. (VD: \\mathrm{Fe^{3+}}, \\mathrm{SO_4^{2-}}, \\mathrm{NH_4^+}).
+    - Mũi tên & Điều kiện: Chữ ghi điều kiện phản ứng BẮT BUỘC phải bọc trong \\text{} để không bị lỗi font LaTeX. (VD: \\xrightarrow{\\text{t}^\\circ, \\text{xt}}, \\xrightleftharpoons[\\text{men}]{\\text{t}^\\circ}). Mũi tên kết tủa \\downarrow, bay hơi \\uparrow.
+    - Khôi phục OCR Hóa: Các chữ bị tách rời phải nối lại (\"N a\" -> \"Na\", \"C u O\" -> \"CuO\"). Các ký hiệu sai như \"t 0\", \"t o\", \"*C\" BẮT BUỘC sửa thành ^\\circ\\mathrm{C}.
 
-    4. QUY TẮC KÝ HIỆU TOÁN & VẬT LÝ (TỪ ĐIỂN LATEX):
-    Nhận diện chuẩn xác và khôi phục các ký hiệu OCR hay nhìn nhầm thành chuẩn LaTeX:
-    * Bảng chữ cái Hy Lạp (Tuyệt đối không dùng chữ Anh thay thế):
-      - \\alpha, \\beta, \\gamma, \\Delta (độ biến thiên), \\pi.
-      - \\omega (tần số góc - OCR hay nhầm thành chữ w).
-      - \\rho (khối lượng riêng - OCR hay nhầm thành chữ p).
-      - \\lambda (bước sóng), \\mu (micro).
-    * Đơn vị đo lường đặc biệt:
-      - ^\\circ\\mathrm{C} (độ C), ^\\circ (độ góc). OCR hay nhầm thành *C hoặc 0C.
-      - \\Omega (Ohm), \\mathring{A} (Angstrom), \\mu\\mathrm{F} (microFarad).
-    * Đại số & Giải tích:
-      - Phân số: \\frac{a}{b}. Căn thức: \\sqrt{x}, \\sqrt[n]{x}.
-      - Tích phân: \\int_a^b, Giới hạn: \\lim_{x \\to 0}, Tổng: \\sum, Vô cực: \\infty.
-      - Ma trận: \\begin{pmatrix} ... \\end{pmatrix}. Hệ phương trình: \\begin{cases} ... \\end{cases}.
-    * Hình học & Vector:
-      - Góc: \\widehat{ABC}, Tam giác: \\triangle, Vuông góc: \\perp, Song song: \\parallel.
-      - Vector: \\vec{v}, \\vec{AB}.
-    * Logic & Tập hợp:
-      - Suy ra: \\Rightarrow, Tương đương: \\Leftrightarrow.
-      - Với mọi: \\forall, Tồn tại: \\exists, Thuộc: \\in, Con: \\subset, Khác: \\neq, Xấp xỉ: \\approx.
+    4. QUY TẮC TOÁN & VẬT LÝ (TỪ ĐIỂN LATEX):
+    - Công thức trong dòng bọc bằng cặp dấu $...$, công thức độc lập bọc bằng cặp dấu $$...$$.
+    - Bảng chữ cái Hy Lạp: \\alpha, \\beta, \\gamma, \\Delta, \\pi, \\omega (không dùng w), \\rho (không dùng p), \\lambda, \\mu.
+    - Đơn vị đo: ^\\circ\\mathrm{C} (độ C), ^\\circ (độ góc), \\Omega (Ohm), \\mathring{A} (Angstrom), \\mu\\mathrm{F}.
+    - Đại số & Hình học: Phân số \\frac{a}{b}, Căn \\sqrt{x}, Tích phân \\int, Giới hạn \\lim, Vô cực \\infty, Góc \\widehat{ABC}, Tam giác \\triangle, Vuông góc \\perp, Song song \\parallel, Vector \\vec{v}.
+    - Hệ phương trình/Ma trận: Bắt buộc dùng \\begin{cases} ... \\end{cases} hoặc \\begin{pmatrix} ... \\end{pmatrix}.
 
-    5. BẢO TOÀN DỮ LIỆU & BỎ "RÁC":
-    - BẮT BUỘC TRÍCH XUẤT 100% NỘI DUNG. Không tóm tắt, không cắt xén, không tự giải bài.
-    - Tự động xóa: Số trang, header, footer, dấu chìm (watermark), chữ "Mã đề".
-    - Công thức trong dòng dùng $...$, công thức độc lập dùng $$...$$.
-    - Định dạng trắc nghiệm chuẩn:
-      **Câu [X]:** [Nội dung]
-      A. [Đáp án]    B. [Đáp án]    C. [Đáp án]    D. [Đáp án]
+    5. QUY TẮC ĐỊNH DẠNG ĐỀ TRẮC NGHIỆM:
+    - Trình bày đáp án trắc nghiệm thật ngăn nắp theo định dạng chuẩn sau (Mỗi đáp án A, B, C, D đều phải xuống dòng):
+      **Câu [X]:** [Nội dung câu hỏi]
+      A. [Đáp án]
+      B. [Đáp án]
+      C. [Đáp án]
+      D. [Đáp án]
 
-    KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giải thích, không xin chào, không có bất kỳ văn bản giao tiếp nào khác."
+    KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giải thích, không xin chào, không có bất kỳ văn bản giao tiếp nào khác ngoài nội dung tài liệu đã xử lý."
 
 ===================================================================
 3. MỤC TIÊU SƯ PHẠM & ĐẶC TẢ ĐỐI TƯỢNG HỌC TẬP:
@@ -604,11 +591,11 @@ ${designPrompt}
 1. CẤU TRÚC LAYOUT TỔNG THỂ (DASHBOARD LAYOUT):
 - Header (Thanh điều hướng trên cùng):
   + Bên trái: Logo icon mũ cử nhân 🎓 và dòng chữ in đậm 'HỌC THUỘC THÔNG MINH'.
-  + Bên phải: Nút Giao diện Sáng/Tối (Sun/Moon icon), Nút 'Hướng dẫn & Trợ giúp', và Avatar người dùng.
+  + Bên phải: Nút Giao diện Sáng/Tối (Sun/Moon icon) và Avatar người dùng.
 - Hero Section (Khu vực trung tâm nổi bật):
   + Tiêu đề lớn (h1, text-3xl, font-bold): 'Bóc Tách Tài Liệu & Học Thuộc Thông Minh!'
   + Đoạn mô tả (text-gray-500): 'Nhập hoặc dán tài liệu nguồn (văn bản thuần). Hệ thống sẽ tự động trích xuất các thẻ Flashcard hoàn chỉnh sẵn sàng ôn luyện.'
-  + Cụm 3 nút CTA: '[+] Tạo thẻ học thủ công' (Outline), '[⚡] Bóc Tách Tài Liệu' (Primary Solid, màu #06b6d4), '[▶] Hướng dẫn & Video' (Ghost).
+  + Cụm 2 nút CTA: '[+] Tạo thẻ học thủ công' (Outline), '[⚡] Bóc Tách Tài Liệu' (Primary Solid, màu #06b6d4).
 
 2. HỆ THỐNG TÌM KIẾM & PHÂN LOẠI (FILTER & SEARCH):
 - Thanh tìm kiếm: Ô input dài toàn chiều ngang, bo góc (rounded-xl), có icon Kính lúp (Search), placeholder: 'Tìm kiếm bài học học phần...'.
@@ -631,7 +618,8 @@ ${designPrompt}
 - Cấu trúc Object 1 Deck: \`{ id: string, title: string, description: string, category: string, source: 'Thủ công' | 'AI', termCount: number, createdAt: string, flashcards: Array<{word, pos, ipa, defVi, defEn, example}> }\`.
 - Logic Search & Filter: Sử dụng useMemo trả về danh sách Deck. Logic lọc = Tên bài học chứa từ khóa VÀ (Category == tab hiện tại HOẶC tab là 'Tất cả').
 - Luồng Chuyển Trạng Thái (Navigation Flow):
-  + Click '[⚡] Bóc Tách Tài Liệu' -> Mở Modal Textarea (nhập text, tên bài, mô tả, chọn danh mục). Bấm Lưu -> Cập nhật LocalStorage -> Tự động đóng Modal & Render thẻ mới ở Trang chủ.
+  + Click '[+] Tạo thẻ học thủ công' -> HIỂN THỊ Modal tạo học phần thủ công (có Form nhập Tên học phần, Phân loại, và một danh sách input để tự điền từng Thẻ từ vựng). Bấm Lưu -> Cập nhật LocalStorage -> Đóng Modal & Render ở Trang chủ.
+  + Click '[⚡] Bóc Tách Tài Liệu' -> HIỂN THỊ Modal nhập liệu siêu tốc (nhập văn bản thô, dùng regex sinh thẻ). Bấm Lưu -> Cập nhật LocalStorage -> Đóng Modal & Render ở Trang chủ.
   + Click vào 1 Thẻ Card bất kỳ -> Ẩn toàn bộ Trang chủ -> Mount Component GamificationArcade (Chứa thẻ 3D và 7 Mini-games), truyền mảng flashcards của thẻ đó vào làm Data học tập.
   + Góc trên cùng của màn hình Học tập phải có nút '← Về Kho Bài Học' để unmount game, hiện lại Trang chủ.
 
