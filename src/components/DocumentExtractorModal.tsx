@@ -286,8 +286,8 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-white/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-6xl h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center md:p-4 bg-white dark:bg-black md:bg-white/80 md:dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full h-[100dvh] md:h-[92vh] max-w-6xl flex flex-col md:rounded-3xl bg-white dark:bg-zinc-950 border-0 md:border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden">
         
         {/* Header */}
         <div className="flex-none p-4 sm:px-6 border-b border-zinc-200 dark:border-zinc-800 bg-slate-50/80 flex items-center justify-between">

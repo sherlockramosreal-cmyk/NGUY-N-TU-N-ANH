@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  Maximize2,
+  Minimize2,
   Copy,
   Check,
   Download,
@@ -28,6 +30,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
   const [copyWarning, setCopyWarning] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'prompt' | 'preview' | 'json'>('prompt');
   const [activeTab, setActiveTab] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const isModular = Array.isArray(promptContent);
   const currentPromptContent = isModular ? (promptContent as string[])[activeTab] : (promptContent as string);
@@ -119,7 +122,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
   return (
     <div
       id="rightColumn"
-      className="lg:col-span-5 flex flex-col h-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-xl overflow-hidden relative"
+      className={`lg:col-span-5 flex flex-col rounded-2xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-xl overflow-hidden transition-all duration-300 ${isExpanded ? "fixed inset-0 z-[100] border-0 rounded-none h-[100dvh]" : "border border-zinc-200 dark:border-zinc-800 h-[60vh] lg:h-[calc(100vh-2rem)] lg:sticky lg:top-4 relative"}`}
     >
       {/* Top Bar with Live Indicator & Action Buttons */}
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
@@ -170,6 +173,20 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
           >
             <Eye className="w-3.5 h-3.5" />
             Văn bản
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="md:hidden px-3 py-1.5 rounded-md font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 flex items-center gap-1.5 ml-2"
+          >
+            {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isExpanded ? 'Thu gọn' : 'Phóng to Prompt'}
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="hidden md:flex px-2 py-1.5 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 items-center justify-center transition ml-1"
+            title={isExpanded ? 'Thu gọn' : 'Phóng to toàn màn hình'}
+          >
+            {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <button
             onClick={() => setViewMode('json')}
@@ -238,16 +255,16 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
       {/* Main Content Terminal */}
       <div className="flex-1 p-4 font-mono text-xs overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-slate-700 bg-white dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400">
         {viewMode === 'prompt' && (
-          <pre className="whitespace-pre-wrap font-mono text-[11px] text-zinc-600 dark:text-zinc-400 select-text">
+          <pre className="w-full break-words whitespace-pre-wrap font-mono text-base md:text-[11px] text-zinc-600 dark:text-zinc-400 select-text">
             {currentPromptContent}
           </pre>
         )}
 
         {viewMode === 'preview' && (
-          <div className="font-sans text-xs space-y-4 text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-none">
+          <div className="font-sans text-base md:text-xs space-y-4 text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-none">
             {currentPromptContent.split('===================================================================').map((section, idx) => (
               <div key={idx} className="p-3.5 rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800">
-                <pre className="font-sans whitespace-pre-wrap text-xs text-zinc-800 dark:text-zinc-100">
+                <pre className="font-sans w-full break-words whitespace-pre-wrap text-base md:text-xs text-zinc-800 dark:text-zinc-100">
                   {section.trim()}
                 </pre>
               </div>
@@ -256,7 +273,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
         )}
 
         {viewMode === 'json' && (
-          <pre className="whitespace-pre-wrap font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
+          <pre className="w-full break-words whitespace-pre-wrap font-mono text-base md:text-[11px] text-zinc-600 dark:text-zinc-400 select-text">
             {jsonPreview}
           </pre>
         )}
