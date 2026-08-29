@@ -281,17 +281,17 @@ renewable energy - năng lượng tái tạo" class="w-full p-4 rounded-xl bg-wh
 
         // Tách chuỗi theo dấu hai chấm (:) hoặc dấu gạch ngang (- hoặc –)
         const cleanLine = line.replace(/^\\d+[.\\s]+/, '');
-        const parts = cleanLine.split(/[:\\-–]/).map(s => s.trim()).filter(Boolean);
+        const parts = cleanLine.split(/[:\\-–](?![^$]*\\$)/).map(s => s.trim()).filter(Boolean);
 
         if (parts.length >= 2) {
           const rawWord = parts[0];
           const posMatch = rawWord.match(/\\(([^)]+)\\)/);
-          const ipaMatch = rawWord.match(/\\/([^/]+)\\//);
-          const word = rawWord.replace(/\\([^)]+\\)/g, '').replace(/\\/[^/]+\\//g, '').trim();
+          const ipaMatch = rawWord.match(/\\[([^\\]]+)\\]/) || rawWord.match(/\\/([^/]+)\\//);
+          const word = rawWord.replace(/\\([^)]+\\)/g, '').replace(/\\[[^\\]]+\\]/g, '').replace(/\\/[^/]+\\//g, '').trim();
           const defVi = parts[1];
           const example = parts[2] || ('Example context for ' + word + '.');
           const pos = posMatch ? posMatch[1].trim() : 'noun';
-          const ipa = ipaMatch ? '/' + ipaMatch[1].trim() + '/' : '/.../';
+          const ipa = ipaMatch ? '[' + ipaMatch[1].trim() + ']' : '[...]';
 
           if (word && word.length >= 1) {
             parsed.push({

@@ -27,8 +27,8 @@ const DEFAULT_CONFIG: PromptConfig = {
   primaryColor: '#18181b',
   accentColor: '#27272a',
   uiStyle: 'minimalist',
-  fontChoice: 'vietnam',
-  systemUtilities: ['web_speech', 'streak_heatmap', 'web_audio', 'dark_mode'],
+  fontChoice: 'arial',
+  systemUtilities: ['web_speech', 'web_audio', 'dark_mode'],
   outputFormat: 'single_file_html',
   strictCompleteCode: true,
   vocabCount: 10,
@@ -53,6 +53,18 @@ function loadSavedConfig(): PromptConfig {
         parsed.sampleContent = DEFAULT_CONFIG.sampleContent;
       }
       
+      const validFonts = [
+        'arial', 'times', 'tahoma', 'courier', 'calibri',
+        'nunito', 'lora', 'fira_code', 'comic_neue', 'bricolage'
+      ];
+      if (!parsed.fontChoice || !validFonts.includes(parsed.fontChoice)) {
+        parsed.fontChoice = 'arial';
+      }
+
+      if (Array.isArray(parsed.systemUtilities)) {
+        parsed.systemUtilities = parsed.systemUtilities.filter((u: string) => u !== 'streak_heatmap');
+      }
+
       return { ...DEFAULT_CONFIG, ...parsed };
     }
   } catch (e) {

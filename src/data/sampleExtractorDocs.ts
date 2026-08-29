@@ -147,13 +147,13 @@ export function extractKnowledgeLayers(rawText: string): ExtractedCard[] {
       currentLayer = 4;
     }
 
-    // Pattern 1: Bold keywords with phonetic and POS: - **term** /ipa/ (noun/adj): definition
-    const boldMatch = line.match(/^[-*•]?\s*\*\*([^*]+)\*\*(?:\s*(\/[^/]+\/))?(?:\s*\(([^)]+)\))?\s*[:\-–]\s*(.+)$/i);
+    // Pattern 1: Bold keywords with phonetic and POS: - **term** [ipa] / /ipa/ (noun/adj): definition
+    const boldMatch = line.match(/^[-*•]?\s*\*\*([^*]+)\*\*(?:\s*(?:\[([^\]]+)\]|\/([^/]+)\/))?(?:\s*\(([^)]+)\))?\s*[:\-–]\s*(.+)$/i);
     if (boldMatch) {
       const term = boldMatch[1].trim();
-      const phonetic = boldMatch[2]?.trim() || '';
-      const posRaw = boldMatch[3]?.toLowerCase() || '';
-      const definition = boldMatch[4]?.trim() || '';
+      const phonetic = (boldMatch[2] ? `[${boldMatch[2].trim()}]` : boldMatch[3] ? `/${boldMatch[3].trim()}/` : '');
+      const posRaw = boldMatch[4]?.toLowerCase() || '';
+      const definition = boldMatch[5]?.trim() || '';
 
       // Check next line for Example:
       let example = '';

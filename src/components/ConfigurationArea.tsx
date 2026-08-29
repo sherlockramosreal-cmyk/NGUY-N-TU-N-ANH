@@ -21,9 +21,25 @@ import {
   Link as LinkIcon,
   Loader2,
   Check,
-  AlertCircle
+  AlertCircle,
+  Type
 } from 'lucide-react';
 import { PromptConfig, GradeLevel, ExamTarget, StudyMode, MiniGameId, ColorTheme, UIStyle, FontChoice, SystemUtility, OutputFormat } from '../types';
+import ArcadeCard from './ArcadeCard';
+import { getUIStyleMockup } from './UIStylePreviews';
+import {
+  DocExtractorThumbnail,
+  Flashcard3DThumbnail,
+  ActiveRecallThumbnail,
+  ExamModeThumbnail,
+  TetrisBlockThumbnail,
+  DinoRunnerThumbnail,
+  PenaltyShootoutThumbnail,
+  SpeedTrueFalseThumbnail,
+  SentenceBuilderThumbnail,
+  DragDropClozeThumbnail,
+  HangmanVocabularyThumbnail,
+} from './CardThumbnails';
 import {
   GRADE_CONFIGS,
   EXAM_CONFIGS,
@@ -53,22 +69,17 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
   const [extractSuccessMsg, setExtractSuccessMsg] = useState<string | null>(null);
   const [extractErrorMsg, setExtractErrorMsg] = useState<string | null>(null);
   const [isFileParsing, setIsFileParsing] = useState(false);
-  const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const [isGradeDropdownOpen, setIsGradeDropdownOpen] = useState(false);
   const [isExamDropdownOpen, setIsExamDropdownOpen] = useState(false);
 
   const sampleContentRef = useRef<HTMLTextAreaElement | null>(null);
   const theoryContentRef = useRef<HTMLTextAreaElement | null>(null);
   const configFileInputRef = useRef<HTMLInputElement>(null);
-  const fontDropdownRef = useRef<HTMLDivElement>(null);
   const gradeDropdownRef = useRef<HTMLDivElement>(null);
   const examDropdownRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (fontDropdownRef.current && !fontDropdownRef.current.contains(event.target as Node)) {
-        setIsFontDropdownOpen(false);
-      }
       if (gradeDropdownRef.current && !gradeDropdownRef.current.contains(event.target as Node)) {
         setIsGradeDropdownOpen(false);
       }
@@ -678,128 +689,297 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
           </div>
         </div>
 
-        {/* 3. Phong cách giao diện (UI Style Cards) */}
+        {/* 3. Phong cách giao diện (UI Style Cards với Mini Preview trực quan) */}
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
               Phong cách giao diện
             </label>
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
               {UI_STYLE_OPTIONS.find(s => s.id === config.uiStyle)?.name}
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
             {UI_STYLE_OPTIONS.map((style) => {
               const isSelected = config.uiStyle === style.id;
               return (
-                <button
-                  type="button"
+                <div
                   key={style.id}
+                  id={`style-${style.id}`}
                   onClick={() => updateConfig('uiStyle', style.id as UIStyle)}
-                  className={`flex flex-col items-start p-3.5 rounded-xl border-zinc-200 text-left transition-all cursor-pointer relative ${
+                  role="radio"
+                  aria-checked={isSelected}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      updateConfig('uiStyle', style.id as UIStyle);
+                    }
+                  }}
+                  className={`flex items-center justify-between p-3.5 sm:p-4 rounded-2xl transition-all duration-300 cursor-pointer relative overflow-hidden group select-none hover:-translate-y-1 hover:shadow-md ${
                     isSelected
-                      ? 'border  bg-white  shadow-sm ring-1 ring '
-                      : 'border  hover:border-zinc-300 bg-white  hover:bg'
+                      ? 'border-2 border-blue-500 dark:border-cyan-500 bg-blue-50/50 dark:bg-blue-950/20 shadow-xs'
+                      : 'border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 hover:border-gray-300 dark:hover:border-zinc-700 hover:bg-gray-50/50 dark:hover:bg-zinc-850/60'
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full mb-1.5">
-                    <span className={`text-xs font-semibold ${isSelected ? 'text  font-bold' : 'text '}`}>
-                      {style.name}
-                    </span>
-                    {isSelected && (
-                      <span className="w-4 h-4 rounded-full bg-white dark:bg-zinc-950 text flex items-center justify-center text-[10px]">
-                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  {/* Left Column: Content (~60%) */}
+                  <div className="flex-1 min-w-0 pr-2 sm:pr-3">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      {/* Custom Radio / Checkmark Icon */}
+                      <div
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-blue-500 dark:bg-cyan-500 border-blue-500 dark:border-cyan-500 text-white shadow-xs'
+                            : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 group-hover:border-gray-400'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+
+                      {/* Title */}
+                      <span className="text-xs font-bold text-gray-800 dark:text-zinc-100 truncate">
+                        {style.name}
                       </span>
-                    )}
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 line-clamp-2 leading-relaxed pl-6">
+                      {style.desc}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    {style.desc}
-                  </p>
-                </button>
+
+                  {/* Right Column: Mini Preview Mockup (~40%) */}
+                  <div className="w-20 h-16 sm:w-24 sm:h-18 rounded-xl bg-gray-50 dark:bg-zinc-800/80 border border-gray-100 dark:border-zinc-700/60 flex items-center justify-center relative overflow-hidden shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
+                    {getUIStyleMockup(style.id)}
+                  </div>
+                </div>
               );
             })}
           </div>
         </div>
 
-        {/* 4. Font chữ hiển thị (Custom Dropdown Menu) */}
-        <div className="space-y-2.5 relative" ref={fontDropdownRef}>
-          <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block">
-            Font chữ hiển thị
-          </label>
-          <button
-            type="button"
-            onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white shadow-sm"
-          >
-            <span className="text-xs font-semibold text-zinc-900 dark:text-white" style={{ fontFamily: `"${FONT_OPTIONS.find(f => f.id === config.fontChoice)?.name}", sans-serif` }}>
-              {FONT_OPTIONS.find(f => f.id === config.fontChoice)?.name}
+        {/* 4. Font chữ hiển thị (Đầy đủ 10 Font từ Chuẩn mực học thuật đến Sáng tạo phá cách) */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5 text-blue-500" />
+              4. Font chữ hiển thị (Chuẩn mực học thuật & Sáng tạo phá cách)
+            </label>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+              Đang chọn: <span className="font-bold text-blue-600 dark:text-cyan-400">{FONT_OPTIONS.find(f => f.id === config.fontChoice)?.name}</span>
             </span>
-            <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${isFontDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
-          
-          {isFontDropdownOpen && (
-            <div className="absolute z-10 w-full mt-1 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 backdrop-blur-md shadow-xl max-h-64 overflow-y-auto py-1 custom-scrollbar">
-              {FONT_OPTIONS.map((font) => {
+          </div>
+
+          {/* Group 1: Chuẩn mực học thuật & An toàn (Web-Safe) */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                🏛️ Nhóm 1: Chuẩn mực học thuật & An toàn (Web-Safe)
+              </span>
+              <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+              {FONT_OPTIONS.filter(f => f.category === 'academic').map((font) => {
                 const isSelected = config.fontChoice === font.id;
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={font.id}
-                    onClick={() => {
-                      updateConfig('fontChoice', font.id as FontChoice);
-                      setIsFontDropdownOpen(false);
+                    id={`font-${font.id}`}
+                    onClick={() => updateConfig('fontChoice', font.id as FontChoice)}
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        updateConfig('fontChoice', font.id as FontChoice);
+                      }
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-xs transition-colors cursor-pointer flex items-center justify-between group ${isSelected ? 'text' : 'text  hover:bg'}`}
-                    style={isSelected && config.primaryColor ? { backgroundColor: config.primaryColor } : (isSelected ? { backgroundColor: '#18181b' } : {})}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-3.5 rounded-2xl transition-all duration-300 cursor-pointer relative overflow-hidden group select-none hover:-translate-y-0.5 hover:shadow-md ${
+                      isSelected
+                        ? 'border-2 border-blue-500 dark:border-cyan-500 bg-blue-50/60 dark:bg-blue-950/30 shadow-xs'
+                        : 'border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 hover:border-gray-300 dark:hover:border-zinc-700 hover:bg-gray-50/50 dark:hover:bg-zinc-850/60'
+                    }`}
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <span className={`font-semibold ${!isSelected ? 'group-hover:text' : ''}`} style={{ fontFamily: `"${font.name}", sans-serif` }}>
-                        {font.name}
-                      </span>
-                      <span className={`text-[10px] ${isSelected ? 'text' : 'text-zinc-500 '} line-clamp-1`}>
+                    <div className="flex-1 min-w-0 pr-0 sm:pr-2.5 mb-2 sm:mb-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <div
+                          className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-blue-500 dark:bg-cyan-500 border-blue-500 dark:border-cyan-500 text-white shadow-xs'
+                              : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 group-hover:border-gray-400'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+
+                        <span
+                          className="text-xs font-bold text-gray-800 dark:text-zinc-100 truncate"
+                          style={{ fontFamily: font.fontFamily }}
+                        >
+                          {font.name}
+                        </span>
+
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-800/80 bg-blue-100/70 dark:bg-blue-950/50 text-blue-700 dark:text-cyan-400 shrink-0">
+                          {font.badge}
+                        </span>
+                      </div>
+
+                      <p className="text-[10px] text-gray-500 dark:text-zinc-400 leading-relaxed pl-5.5 line-clamp-2">
                         {font.desc}
-                      </span>
+                      </p>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 shrink-0 stroke-[3]" />}
-                  </button>
+
+                    <div
+                      className="w-full sm:w-36 h-12 rounded-xl bg-gray-50 dark:bg-zinc-800/80 border border-gray-200/80 dark:border-zinc-700/60 p-1.5 flex flex-col justify-center shrink-0 shadow-inner group-hover:scale-102 transition-transform duration-300 overflow-hidden"
+                      style={{ fontFamily: font.fontFamily }}
+                    >
+                      <div className="flex items-baseline justify-between text-[11px] font-semibold text-gray-800 dark:text-zinc-200">
+                        <span>Aa Bb Gg</span>
+                        <span className="text-[9px] text-gray-400 font-mono">123</span>
+                      </div>
+                      <p className="text-[9px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                        {font.sample}
+                      </p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          )}
+          </div>
+
+          {/* Group 2: Sáng tạo, Hiện đại & Vui nhộn (EdTech / Arcade) */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800/50">
+                🚀 Nhóm 2: Sáng tạo, Hiện đại & Vui nhộn (EdTech / Arcade)
+              </span>
+              <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+              {FONT_OPTIONS.filter(f => f.category === 'creative').map((font) => {
+                const isSelected = config.fontChoice === font.id;
+                return (
+                  <div
+                    key={font.id}
+                    id={`font-${font.id}`}
+                    onClick={() => updateConfig('fontChoice', font.id as FontChoice)}
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        updateConfig('fontChoice', font.id as FontChoice);
+                      }
+                    }}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-3.5 rounded-2xl transition-all duration-300 cursor-pointer relative overflow-hidden group select-none hover:-translate-y-0.5 hover:shadow-md ${
+                      isSelected
+                        ? 'border-2 border-purple-500 dark:border-purple-400 bg-purple-50/60 dark:bg-purple-950/30 shadow-xs'
+                        : 'border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 hover:border-gray-300 dark:hover:border-zinc-700 hover:bg-gray-50/50 dark:hover:bg-zinc-850/60'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0 pr-0 sm:pr-2.5 mb-2 sm:mb-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <div
+                          className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-purple-500 dark:bg-purple-400 border-purple-500 dark:border-purple-400 text-white shadow-xs'
+                              : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 group-hover:border-gray-400'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+
+                        <span
+                          className="text-xs font-bold text-gray-800 dark:text-zinc-100 truncate"
+                          style={{ fontFamily: font.fontFamily }}
+                        >
+                          {font.name}
+                        </span>
+
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-purple-200 dark:border-purple-800/80 bg-purple-100/70 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 shrink-0">
+                          {font.badge}
+                        </span>
+                      </div>
+
+                      <p className="text-[10px] text-gray-500 dark:text-zinc-400 leading-relaxed pl-5.5 line-clamp-2">
+                        {font.desc}
+                      </p>
+                    </div>
+
+                    <div
+                      className="w-full sm:w-36 h-12 rounded-xl bg-gray-50 dark:bg-zinc-800/80 border border-gray-200/80 dark:border-zinc-700/60 p-1.5 flex flex-col justify-center shrink-0 shadow-inner group-hover:scale-102 transition-transform duration-300 overflow-hidden"
+                      style={{ fontFamily: font.fontFamily }}
+                    >
+                      <div className="flex items-baseline justify-between text-[11px] font-semibold text-gray-800 dark:text-zinc-200">
+                        <span>Aa Bb Gg</span>
+                        <span className="text-[9px] text-gray-400 font-mono">123</span>
+                      </div>
+                      <p className="text-[9px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                        {font.sample}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* 5. Tiện ích hệ thống tích hợp */}
-        <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-          <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
-            Tiện ích hệ thống tích hợp
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="space-y-2 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+              5. Tiện ích hệ thống tích hợp
+            </label>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+              {config.systemUtilities.filter(u => u !== 'web_speech').length} đã chọn
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {SYSTEM_UTILITY_OPTIONS.map((util) => {
               const isChecked = config.systemUtilities.includes(util.id as SystemUtility);
               return (
-                <label
+                <div
                   key={util.id}
-                  className={`flex items-start gap-3 p-3 rounded-xl border-zinc-200 cursor-pointer transition-all ${
+                  id={`util-${util.id}`}
+                  onClick={() => toggleSystemUtility(util.id as SystemUtility)}
+                  role="checkbox"
+                  aria-checked={isChecked}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      toggleSystemUtility(util.id as SystemUtility);
+                    }
+                  }}
+                  className={`flex items-start gap-2.5 p-3 rounded-xl cursor-pointer transition-all select-none ${
                     isChecked
-                      ? 'border  bg-white '
-                      : 'border  hover:border-zinc-300 bg-white '
+                      ? 'border-2 border-blue-500 dark:border-cyan-500 bg-blue-50/50 dark:bg-blue-950/20 shadow-xs'
+                      : 'border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleSystemUtility(util.id as SystemUtility)}
-                    className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2 cursor-pointer"
-                  />
-                  <div>
-                    <span className="font-semibold text-xs block text-zinc-900 dark:text-white group-hover:text">
+                  <div
+                    className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                      isChecked
+                        ? 'bg-blue-500 dark:bg-cyan-500 border-blue-500 dark:border-cyan-500 text-white'
+                        : 'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800'
+                    }`}
+                  >
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-semibold text-xs block text-zinc-900 dark:text-white leading-tight">
                       {util.label}
                     </span>
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-0.5">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
                       {util.desc}
                     </span>
                   </div>
-                </label>
+                </div>
               );
             })}
           </div>
@@ -807,243 +987,223 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
       </div>
 
       {/* PHẦN 3: CHẾ ĐỘ HỌC THUẬT */}
-      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 #0E1116] border-zinc-200 dark:border-zinc-800 space-y-5">
+      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-          <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white">
-            3. Chế độ học thuật
-          </h3>
+          <div>
+            <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-blue-500" />
+              3. Chế độ học thuật
+            </h3>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Chọn các mô-đun học tập cốt lõi được kích hoạt trong ứng dụng
+            </p>
+          </div>
           <div className="flex gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
             <button
               type="button"
               onClick={selectAllStudyModes}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-blue-500 dark:hover:text-cyan-400 font-medium transition-colors cursor-pointer"
             >
               Chọn tất cả
             </button>
             <button
               type="button"
               onClick={clearAllStudyModes}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-red-500 font-medium transition-colors cursor-pointer"
             >
               Bỏ chọn
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
           {/* Chế độ 0 (Bắt buộc): Form Nạp dữ liệu */}
-          <label className="flex items-start gap-3 p-3 rounded-lg bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.studyModes.includes('doc_extractor')}
-              onChange={() => toggleStudyMode('doc_extractor')}
-              className="mt-0.5 w-3.5 h-3.5 text-black dark:text-white bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
-            />
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 group-hover:text-indigo-900-indigo-200">
-                  Form Nạp Dữ Liệu
-                </p>
-                <span className="text-[9px] font-bold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
-                  Bắt buộc
-                </span>
-              </div>
-              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Khung nhập liệu & Bóc tách từ vựng
-              </p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="mode-doc-extractor"
+            title="Form Nạp Dữ Liệu"
+            description="Khung nhập liệu & Bóc tách từ vựng tự động (4 tầng)"
+            badge="Bắt buộc"
+            icon={FileText}
+            iconColor="text-blue-500 dark:text-cyan-400"
+            badgeColor="text-blue-600 dark:text-cyan-400 bg-blue-100 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800"
+            isSelected={config.studyModes.includes('doc_extractor')}
+            onToggle={() => toggleStudyMode('doc_extractor')}
+            thumbnail={<DocExtractorThumbnail />}
+          />
 
           {/* Chế độ 1: Flashcard 3D */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.studyModes.includes('flashcard3d')}
-              onChange={() => toggleStudyMode('flashcard3d')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2 cursor-pointer"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Flashcard 3D
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Lật thẻ từ vựng thông minh
-              </p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="mode-flashcard3d"
+            title="Flashcard 3D"
+            description="Lật thẻ từ vựng thông minh & âm thanh phát âm"
+            badge="3D Flip"
+            icon={Layers}
+            iconColor="text-indigo-500 dark:text-indigo-400"
+            badgeColor="text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800"
+            isSelected={config.studyModes.includes('flashcard3d')}
+            onToggle={() => toggleStudyMode('flashcard3d')}
+            thumbnail={<Flashcard3DThumbnail />}
+          />
 
           {/* Chế độ 2: Active Recall */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.studyModes.includes('active_recall')}
-              onChange={() => toggleStudyMode('active_recall')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2 cursor-pointer"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Active Recall
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Trắc nghiệm phản xạ nhanh
-              </p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="mode-active-recall"
+            title="Active Recall"
+            description="Trắc nghiệm phản xạ nhanh & ghi nhớ dài hạn"
+            badge="Quiz Fast"
+            icon={HelpCircle}
+            iconColor="text-amber-500 dark:text-amber-400"
+            badgeColor="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800"
+            isSelected={config.studyModes.includes('active_recall')}
+            onToggle={() => toggleStudyMode('active_recall')}
+            thumbnail={<ActiveRecallThumbnail />}
+          />
 
           {/* Chế độ 3: Exam Mode */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.studyModes.includes('exam_mode')}
-              onChange={() => toggleStudyMode('exam_mode')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2 cursor-pointer"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Exam Mode
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Thi thử có tính giờ
-              </p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="mode-exam-mode"
+            title="Exam Mode"
+            description="Thi thử có tính giờ theo cấu trúc chuẩn hóa"
+            badge="Tính giờ"
+            icon={CheckSquare}
+            iconColor="text-rose-500 dark:text-rose-400"
+            badgeColor="text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800"
+            isSelected={config.studyModes.includes('exam_mode')}
+            onToggle={() => toggleStudyMode('exam_mode')}
+            thumbnail={<ExamModeThumbnail />}
+          />
         </div>
       </div>
 
-      {/* PHẦN 4: GAMIFICATION (Bỏ Emoji, Giao diện Clean) */}
-      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 #0E1116] border-zinc-200 dark:border-zinc-800 space-y-5">
+      {/* PHẦN 4: GAMIFICATION (Giao diện Arcade Playful 60/40) */}
+      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-          <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white">4. Gamification</h3>
+          <div>
+            <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-2">
+              <Gamepad2 className="w-4 h-4 text-emerald-500" />
+              4. Gamification
+            </h3>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Mini-game EdTech tương tác cao giúp ôn tập cuốn hút và giảm mệt mỏi
+            </p>
+          </div>
           <div className="flex gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
             <button
               type="button"
               onClick={selectAllGames}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-blue-500 dark:hover:text-cyan-400 font-medium transition-colors cursor-pointer"
             >
               Chọn tất cả
             </button>
             <button
               type="button"
               onClick={clearAllGames}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-red-500 font-medium transition-colors cursor-pointer"
             >
               Bỏ chọn
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
           {/* Game 1: Block Puzzle */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('tetris')}
-              onChange={() => toggleGame('tetris')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Block Puzzle
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Xếp gạch theo từ loại</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-tetris"
+            title="Block Puzzle"
+            description="Xếp gạch theo từ loại, combo dọn hàng & cơ chế hồi sinh"
+            badge="Xếp gạch"
+            icon={Gamepad2}
+            iconColor="text-orange-500 dark:text-orange-400"
+            badgeColor="text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-950/60 border-orange-200 dark:border-orange-800"
+            isSelected={config.selectedGames.includes('tetris')}
+            onToggle={() => toggleGame('tetris')}
+            thumbnail={<TetrisBlockThumbnail />}
+          />
 
           {/* Game 2: Dino Runner */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('dino')}
-              onChange={() => toggleGame('dino')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Dino Runner
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Khủng long vượt ải</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-dino"
+            title="Dino Runner"
+            description="Khủng long vượt ải, nhảy né chướng ngại & giải cứu bạn bè"
+            badge="Vượt ải"
+            icon={Sparkles}
+            iconColor="text-emerald-500 dark:text-emerald-400"
+            badgeColor="text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800"
+            isSelected={config.selectedGames.includes('dino')}
+            onToggle={() => toggleGame('dino')}
+            thumbnail={<DinoRunnerThumbnail />}
+          />
 
           {/* Game 3: Penalty Shootout */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('penalty')}
-              onChange={() => toggleGame('penalty')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Penalty Shootout
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Sút phạt trắc nghiệm</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-penalty"
+            title="Penalty Shootout"
+            description="Sút phạt luân lưu trắc nghiệm 4 góc khung thành cùng 19 CLB"
+            badge="19 CLB"
+            icon={Target}
+            iconColor="text-teal-500 dark:text-teal-400"
+            badgeColor="text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-950/60 border-teal-200 dark:border-teal-800"
+            isSelected={config.selectedGames.includes('penalty')}
+            onToggle={() => toggleGame('penalty')}
+            thumbnail={<PenaltyShootoutThumbnail />}
+          />
 
           {/* Game 4: Speed True/False */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('truefalse')}
-              onChange={() => toggleGame('truefalse')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Speed True/False
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Phản xạ thời gian thực</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-truefalse"
+            title="Speed True/False"
+            description="Phản xạ đúng / sai 4 giây chớp nhoáng, tích lũy combo x5"
+            badge="3s Phản xạ"
+            icon={Flame}
+            iconColor="text-red-500 dark:text-red-400"
+            badgeColor="text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/60 border-red-200 dark:border-red-800"
+            isSelected={config.selectedGames.includes('truefalse')}
+            onToggle={() => toggleGame('truefalse')}
+            thumbnail={<SpeedTrueFalseThumbnail />}
+          />
 
           {/* Game 5: Sentence Builder */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('scramble')}
-              onChange={() => toggleGame('scramble')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Sentence Builder
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Sắp xếp cấu trúc ngữ pháp</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-scramble"
+            title="Sentence Builder"
+            description="Sắp xếp cấu trúc ngữ pháp S-V-O & Collocation thành thạo"
+            badge="Cú pháp"
+            icon={BookOpen}
+            iconColor="text-yellow-600 dark:text-yellow-400"
+            badgeColor="text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-950/60 border-yellow-200 dark:border-yellow-800"
+            isSelected={config.selectedGames.includes('scramble')}
+            onToggle={() => toggleGame('scramble')}
+            thumbnail={<SentenceBuilderThumbnail />}
+          />
 
           {/* Game 6: Word Match & Cloze */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('dragdrop')}
-              onChange={() => toggleGame('dragdrop')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Word Match & Cloze
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Nối từ & Điền khuyết ngữ cảnh</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-dragdrop"
+            title="Word Match & Cloze"
+            description="Kéo thả nối từ 5x5 & điền khuyết đoạn văn ngữ cảnh"
+            badge="Kéo thả"
+            icon={CheckCheck}
+            iconColor="text-indigo-500 dark:text-indigo-400"
+            badgeColor="text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800"
+            isSelected={config.selectedGames.includes('dragdrop')}
+            onToggle={() => toggleGame('dragdrop')}
+            thumbnail={<DragDropClozeThumbnail />}
+          />
 
           {/* Game 7: Hangman */}
-          <label className="flex items-start gap-3 p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 border-transparent hover:border-zinc-300 dark:hover:border-zinc-600 cursor-pointer transition-all group md:col-span-2">
-            <input
-              type="checkbox"
-              checked={config.selectedGames.includes('hangman')}
-              onChange={() => toggleGame('hangman')}
-              className="mt-0.5 w-3.5 h-3.5 text-zinc-900 dark:text-white bg-zinc-50 dark:bg-black border-zinc-200 dark:border-zinc-800 rounded focus:ring-black dark:focus:ring-white focus:ring-2"
-            />
-            <div>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white group-hover:text">
-                Hangman Vocabulary
-              </p>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Đoán ký tự & Khám phá định nghĩa</p>
-            </div>
-          </label>
+          <ArcadeCard
+            id="game-hangman"
+            title="Hangman Vocabulary"
+            description="Đoán ký tự cứu mạng & khám phá định nghĩa từ vựng bí ẩn"
+            badge="Cứu mạng"
+            icon={HelpCircle}
+            iconColor="text-amber-500 dark:text-amber-400"
+            badgeColor="text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800"
+            isSelected={config.selectedGames.includes('hangman')}
+            onToggle={() => toggleGame('hangman')}
+            thumbnail={<HangmanVocabularyThumbnail />}
+            className="md:col-span-2"
+          />
         </div>
       </div>
 

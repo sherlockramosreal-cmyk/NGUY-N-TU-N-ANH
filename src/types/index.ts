@@ -41,16 +41,16 @@ export type UIStyle =
   | 'neumorphism';
 
 export type FontChoice = 
-  | 'vietnam'
-  | 'montserrat'
-  | 'jetbrains'
-  | 'inter'
-  | 'geist'
-  | 'jakarta'
-  | 'outfit'
-  | 'lexend'
-  | 'grotesk'
-  | 'sora';
+  | 'arial'
+  | 'times'
+  | 'tahoma'
+  | 'courier'
+  | 'calibri'
+  | 'nunito'
+  | 'lora'
+  | 'fira_code'
+  | 'comic_neue'
+  | 'bricolage';
 
 export type SystemUtility = 
   | 'web_speech'
