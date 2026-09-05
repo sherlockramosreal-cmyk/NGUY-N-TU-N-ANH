@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Sun, Moon, BookOpen, RotateCcw, Bookmark, Play, FileText } from 'lucide-react';
-import { PRESET_TEMPLATES } from '../data/promptTemplates';
+import { Sparkles, Sun, Moon, RotateCcw, Play, FileText, Compass, ExternalLink } from 'lucide-react';
 import { PromptConfig } from '../types';
 
 interface HeaderProps {
-  onSelectPreset: (presetConfig: PromptConfig) => void;
   onReset: () => void;
-  onOpenSimulator: () => void;
   onOpenExtractor: () => void;
+  onOpenVideo: () => void;
+  onOpenTour: () => void;
 }
 
 type ThemeMode = 'light' | 'dark';
 
-export default function Header({ onSelectPreset, onReset, onOpenSimulator, onOpenExtractor }: HeaderProps) {
+export default function Header({
+  onReset,
+  onOpenExtractor,
+  onOpenVideo,
+  onOpenTour
+}: HeaderProps) {
   const [theme, setTheme] = useState<ThemeMode>(() => {
     try {
       const saved = localStorage.getItem('app_theme') as ThemeMode;
@@ -23,7 +27,6 @@ export default function Header({ onSelectPreset, onReset, onOpenSimulator, onOpe
     return 'light';
   });
   const [isRotating, setIsRotating] = useState(false);
-  const [showPresetsMenu, setShowPresetsMenu] = useState(false);
 
   useEffect(() => {
     const htmlEl = document.documentElement;
@@ -76,67 +79,57 @@ export default function Header({ onSelectPreset, onReset, onOpenSimulator, onOpe
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Sample Web Demo Link */}
+        <a
+          id="web-mau-btn"
+          href="https://web-tu-hoc-english.vercel.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-xs hover:scale-102 active:scale-98 cursor-pointer"
+          title="Mở Web Mẫu tham khảo (https://web-tu-hoc-english.vercel.app)"
+        >
+          <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>WEB MẪU</span>
+        </a>
+
+        {/* Video Tutorial Button (YouTube NCKH 2026) */}
+        <button
+          id="tour-youtube-btn"
+          type="button"
+          onClick={onOpenVideo}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-900/70 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/60 transition shadow-xs hover:scale-102 active:scale-98 cursor-pointer"
+          title="Xem video hướng dẫn trên YouTube (https://youtu.be/cfU-Ez0-Nec?si=UXpFTHvfWw70dpWD)"
+        >
+          <div className="w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
+            <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+          </div>
+          <span className="hidden lg:inline">Video Hướng Dẫn</span>
+          <span className="lg:hidden">Video</span>
+        </button>
+
+        {/* Onboarding Tour Button */}
+        <button
+          id="tour-help-btn"
+          type="button"
+          onClick={onOpenTour}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900/70 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shadow-xs hover:scale-102 active:scale-98 cursor-pointer"
+          title="Mở tour hướng dẫn giao diện"
+        >
+          <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span className="hidden md:inline">Hướng Dẫn</span>
+          <span className="md:hidden">Tour</span>
+        </button>
+
         {/* Document Extractor Button (Phân hệ Bóc tách tài liệu & Nạp lý thuyết mới) */}
         <button
+          id="tour-extractor-btn"
           type="button"
           onClick={onOpenExtractor}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold shadow-sm transition hover:scale-102 active:scale-98 animate-pulse hover:animate-none"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold shadow-sm transition hover:scale-102 active:scale-98 animate-pulse hover:animate-none cursor-pointer"
         >
           <FileText className="w-3.5 h-3.5" />
           <span className="hidden md:inline">Bóc Tách Tài Liệu (4 Tầng)</span>
           <span className="md:hidden">Nạp Bài Học</span>
-        </button>
-
-        {/* Preset Selector Dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowPresetsMenu(!showPresetsMenu)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
-          >
-            <Bookmark className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-            <span className="hidden sm:inline">Mẫu Prompt NCKH</span>
-            <span className="sm:hidden">Mẫu</span>
-          </button>
-
-          {showPresetsMenu && (
-            <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800">
-                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">
-                  Chọn mẫu cấu hình sư phạm:
-                </span>
-              </div>
-              <div className="space-y-1 mt-1">
-                {PRESET_TEMPLATES.map((preset) => (
-                  <button
-                    key={preset.id}
-                    onClick={() => {
-                      onSelectPreset(preset.config as unknown as PromptConfig);
-                      setShowPresetsMenu(false);
-                    }}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition group"
-                  >
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-black">
-                      {preset.name}
-                    </div>
-                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-0.5">
-                      {preset.description}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Sandbox Simulator */}
-        <button
-          type="button"
-          onClick={onOpenSimulator}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-bold shadow-sm transition hover:scale-102 active:scale-98"
-        >
-          <Play className="w-3.5 h-3.5 fill-current" />
-          <span className="hidden sm:inline">Mô phỏng App</span>
         </button>
 
         {/* Reset Button */}

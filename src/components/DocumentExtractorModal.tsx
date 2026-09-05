@@ -24,7 +24,7 @@ import {
   Code2
 } from 'lucide-react';
 import { PromptConfig, ExtractedCard, KnowledgeLayer } from '../types';
-import { SAMPLE_DOCUMENTS, extractKnowledgeLayers } from '../data/sampleExtractorDocs';
+import { SAMPLE_DOCUMENTS, extractKnowledgeLayers, cleanPdfAndWhitespace } from '../data/sampleExtractorDocs';
 import { extractTextFromFile } from '../utils/fileParser';
 import { toast } from './Toast';
 
@@ -33,36 +33,36 @@ interface DocumentExtractorModalProps {
   onClose: () => void;
   config: PromptConfig;
   onSaveToLessonBank: (updatedConfig: PromptConfig, cards: ExtractedCard[]) => void;
-  onOpenSimulator: () => void;
+  onUpdateConfig?: (updatedConfig: PromptConfig) => void;
 }
 
 const LAYER_INFO: Record<KnowledgeLayer, { name: string; tag: string; color: string; desc: string; icon: string }> = {
   1: {
-    name: 'Tầng 1: Định nghĩa & Khái niệm cốt lõi',
-    tag: 'Definitions & Core Concepts',
-    color: 'bg-blue-500/10 text-blue-700  border-blue-200 ',
-    desc: 'Thuật ngữ chính, từ vựng trọng tâm kèm phiên âm IPA và nghĩa cốt lõi.',
+    name: 'Tầng 1: Khái niệm & Từ khóa cốt lõi',
+    tag: 'Khái niệm / Từ khóa',
+    color: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    desc: 'Các thuật ngữ, khái niệm nền tảng, chất hóa học hoặc từ vựng trọng tâm.',
     icon: '📘',
   },
   2: {
-    name: 'Tầng 2: Cụm từ, Collocations & Công thức',
-    tag: 'Phrases, Collocations & Formulas',
-    color: 'bg-emerald-500/10 text-emerald-700  border-emerald-200 ',
-    desc: 'Các cụm từ cố định, liên từ kết hợp, thành ngữ idiomatic và cụm giới từ.',
+    name: 'Tầng 2: Công thức & Mối liên kết',
+    tag: 'Công thức / Liên kết',
+    color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    desc: 'Các phương trình, công thức tính toán hoặc các cụm từ liên kết ngữ pháp.',
     icon: '🔗',
   },
   3: {
-    name: 'Tầng 3: Quy trình & Cấu trúc ngữ pháp',
-    tag: 'Grammar Syntax & Processes',
-    color: 'bg-amber-500/10 text-amber-700  border-amber-200 ',
-    desc: 'Cấu trúc câu, quy tắc biến đổi đảo ngữ, rút gọn phân từ, thể bị động và câu điều kiện.',
+    name: 'Tầng 3: Quy luật & Logic',
+    tag: 'Quy luật / Logic',
+    color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    desc: 'Các định lý, chuỗi chuyển hóa, quy tắc ngữ pháp hoặc mạch diễn biến logic.',
     icon: '⚙️',
   },
   4: {
-    name: 'Tầng 4: Ngữ cảnh & Ví dụ ứng dụng thực tế',
-    tag: 'Contextual Usage & Real Examples',
-    color: 'bg-purple-500/10 text-purple-700  border-purple-200 ',
-    desc: 'Câu ví dụ hoàn chỉnh, bẫy thi thực chiến, ngữ cảnh học thuật và đời sống.',
+    name: 'Tầng 4: Ứng dụng & Mở rộng',
+    tag: 'Ứng dụng / Mở rộng',
+    color: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+    desc: 'Ứng dụng thực tế, bài học rút ra, hoặc các câu hỏi bẫy thường gặp trong đề thi.',
     icon: '🌿',
   },
 };
@@ -72,9 +72,9 @@ export default function DocumentExtractorModal({
   onClose,
   config,
   onSaveToLessonBank,
-  onOpenSimulator,
+  onUpdateConfig,
 }: DocumentExtractorModalProps) {
-  const [inputText, setInputText] = useState(SAMPLE_DOCUMENTS[0].text);
+  const [inputText, setInputText] = useState(config.rawExtractedDocText || SAMPLE_DOCUMENTS[0].text);
   const [selectedDocId, setSelectedDocId] = useState<string>(SAMPLE_DOCUMENTS[0].id);
   const [rightPaneMode, setRightPaneMode] = useState<'cards' | 'json'>('cards');
   const [cards, setCards] = useState<ExtractedCard[]>(() => {
@@ -87,6 +87,7 @@ export default function DocumentExtractorModal({
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [fileErrorMsg, setFileErrorMsg] = useState<string | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [successToastMsg, setSuccessToastMsg] = useState('Đã nạp vào kho bài học thành công!');
   const [customTopicTitle, setCustomTopicTitle] = useState(config.lessonTopic || SAMPLE_DOCUMENTS[0].topic);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [selectedText, setSelectedText] = useState('');
@@ -206,14 +207,41 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
     }
   };
 
-  // Execute Extraction
+  // Execute Extraction: Kích hoạt chế độ AI Phân tích & Bóc tách vào Master Prompt
   const handleExtract = () => {
+    if (!inputText.trim()) return;
     setIsExtracting(true);
     setTimeout(() => {
-      const result = extractKnowledgeLayers(inputText);
-      setCards(result);
+      // 1. Nối thêm (Append) đoạn text chỉ thị đặc biệt vào state của Master Prompt
+      const rawText = inputText.trim();
+      const updatedConfig: PromptConfig = {
+        ...config,
+        lessonTopic: customTopicTitle?.trim() || config.lessonTopic,
+        rawExtractedDocText: rawText,
+      };
+
+      if (onUpdateConfig) {
+        onUpdateConfig(updatedConfig);
+      } else {
+        onSaveToLessonBank(updatedConfig, cards);
+      }
+
       setIsExtracting(false);
-    }, 400);
+
+      // 2. Chạy hàm alert thông báo cho người dùng biết thao tác thành công (UI dummy giữ nguyên)
+      const alertMsg = '✅ Đã đẩy lệnh yêu cầu AI phân tích dữ liệu vào Master Prompt!';
+      try {
+        window.alert(alertMsg);
+      } catch (e) {
+        console.warn('Alert notice:', e);
+      }
+      toast.success(alertMsg);
+      setSuccessToastMsg(alertMsg);
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+      }, 4500);
+    }, 200);
   };
 
   // Card Modifications
@@ -228,11 +256,11 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
   const handleAddCard = (layer: KnowledgeLayer = 1) => {
     const newCard: ExtractedCard = {
       id: `card_custom_${Date.now()}`,
-      term: 'new vocabulary',
-      phonetic: '/.../',
+      term: 'Từ khóa / Khái niệm mới',
+      phonetic: '',
       pos: 'Noun',
-      definition: 'Nhập định nghĩa tiếng Việt...',
-      example: 'Enter an English example sentence here.',
+      definition: 'Nhập định nghĩa / bản chất kiến thức...',
+      example: 'Nhập ví dụ minh họa hoặc bài toán áp dụng...',
       layer,
     };
     setCards(prev => [newCard, ...prev]);
@@ -257,10 +285,10 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
 
     // Extract core theory from text or cards
     const theorySummary = `=== TỔNG HỢP KIẾN THỨC TỪ TÀI LIỆU BÓC TÁCH (${customTopicTitle}) ===
-1. Khái niệm & Thuật ngữ cốt lõi: ${cards.filter(c => c.layer === 1).map(c => c.term).slice(0, 5).join(', ')}
-2. Cụm từ & Collocations: ${cards.filter(c => c.layer === 2).map(c => c.term).slice(0, 5).join(', ')}
-3. Cấu trúc & Quy trình: ${cards.filter(c => c.layer === 3).map(c => c.term).slice(0, 4).join(' | ')}
-4. Ứng dụng thực tế: ${cards.filter(c => c.layer === 4).map(c => c.term).slice(0, 4).join(', ')}`;
+1. Khái niệm & Từ khóa cốt lõi: ${cards.filter(c => c.layer === 1).map(c => c.term).slice(0, 5).join(', ')}
+2. Công thức & Mối liên kết: ${cards.filter(c => c.layer === 2).map(c => c.term).slice(0, 5).join(', ')}
+3. Quy luật & Logic: ${cards.filter(c => c.layer === 3).map(c => c.term).slice(0, 4).join(' | ')}
+4. Ứng dụng & Mở rộng: ${cards.filter(c => c.layer === 4).map(c => c.term).slice(0, 4).join(', ')}`;
 
     const updatedConfig: PromptConfig = {
       ...config,
@@ -269,9 +297,14 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
       sampleContent: formattedSampleContent,
       vocabCount: cards.length,
       extractedCards: cards,
+      rawExtractedDocText: inputText.trim() || config.rawExtractedDocText,
     };
 
     onSaveToLessonBank(updatedConfig, cards);
+    if (onUpdateConfig) {
+      onUpdateConfig(updatedConfig);
+    }
+    setSuccessToastMsg('Đã nạp vào kho bài học thành công!');
     setShowSuccessToast(true);
     setTimeout(() => {
       setShowSuccessToast(false);
@@ -612,10 +645,11 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                 <button
                   type="button"
                   onClick={() => setSelectedLayerFilter('all')}
+                  title="Tất cả các tầng kiến thức: Khái niệm - Công thức - Quy luật - Ứng dụng"
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                     selectedLayerFilter === 'all'
                       ? 'bg-black text-white shadow-sm'
-                      : 'bg-slate-100  text-slate-600  hover:bg-slate-200'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
                   }`}
                 >
                   <span>Tất cả ({cards.length})</span>
@@ -628,10 +662,11 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                       key={layer}
                       type="button"
                       onClick={() => setSelectedLayerFilter(layer)}
+                      title={`${info.name}: ${info.desc}`}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                         selectedLayerFilter === layer
                           ? 'bg-black text-white shadow-sm'
-                          : 'bg-slate-100  text-slate-600  hover:bg-slate-200'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
                       }`}
                     >
                       <span>{info.icon} Tầng {layer}</span>
@@ -645,7 +680,7 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                 <button
                   type="button"
                   onClick={() => handleAddCard(selectedLayerFilter === 'all' ? 1 : selectedLayerFilter)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-50 dark:bg-black hover:bg-zinc-100 dark:hover:bg-zinc-800 :bg-indigo-950 text-zinc-700 dark:text-zinc-300 text-xs font-bold transition"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-50 dark:bg-black hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold transition"
                 >
                   <Plus className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                   <span>Thêm thẻ</span>
@@ -655,12 +690,13 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
 
             {/* Current Layer Description Header */}
             {selectedLayerFilter !== 'all' && (
-              <div className={`mt-3 p-3 rounded-xl border text-xs ${LAYER_INFO[selectedLayerFilter].color}`}>
-                <div className="font-bold flex items-center gap-1.5">
-                  <span>{LAYER_INFO[selectedLayerFilter].icon}</span>
+              <div className={`mt-3 p-3.5 rounded-2xl border ${LAYER_INFO[selectedLayerFilter].color}`}>
+                <h3 className="font-bold flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="text-sm">{LAYER_INFO[selectedLayerFilter].icon}</span>
                   <span>{LAYER_INFO[selectedLayerFilter].name}</span>
-                </div>
-                <p className="text-[11px] mt-0.5 opacity-90">{LAYER_INFO[selectedLayerFilter].desc}</p>
+                  <span className="ml-auto text-[11px] font-mono opacity-85 font-normal">({filteredCards.length} thẻ)</span>
+                </h3>
+                <p className="text-[11px] sm:text-xs mt-1 opacity-90 leading-relaxed">{LAYER_INFO[selectedLayerFilter].desc}</p>
               </div>
             )}
 
@@ -682,7 +718,7 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                 filteredCards.map((card) => (
                   <div
                     key={card.id}
-                    className="p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-slate-50/60 space-y-2.5 transition hover:border-indigo-300 :border-indigo-800"
+                    className="p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/50 space-y-2.5 transition hover:border-indigo-300 dark:hover:border-indigo-800"
                   >
                     {/* Top Row: Term, Phonetic, POS & Layer Selector */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -691,14 +727,14 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                           type="text"
                           value={card.term}
                           onChange={(e) => handleCardChange(card.id, 'term', e.target.value)}
-                          placeholder="Thuật ngữ tiếng Anh..."
+                          placeholder="Thuật ngữ / Khái niệm / Công thức..."
                           className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-black dark:text-white flex-1 min-w-[120px]"
                         />
                         <input
                           type="text"
                           value={card.phonetic || ''}
                           onChange={(e) => handleCardChange(card.id, 'phonetic', e.target.value)}
-                          placeholder="/ipa/"
+                          placeholder="Ký hiệu / IPA..."
                           className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-500 dark:text-zinc-400 w-28"
                         />
                         <select
@@ -706,12 +742,12 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                           onChange={(e) => handleCardChange(card.id, 'pos', e.target.value)}
                           className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300"
                         >
-                          <option value="Noun">Noun (Danh từ)</option>
-                          <option value="Verb">Verb (Động từ)</option>
-                          <option value="Adjective">Adj (Tính từ)</option>
-                          <option value="Adverb">Adv (Trạng từ)</option>
-                          <option value="Phrase">Phrase (Cụm từ)</option>
-                          <option value="Grammar">Grammar (Cú pháp)</option>
+                          <option value="Noun">Khái niệm / Danh từ</option>
+                          <option value="Verb">Quy trình / Động từ</option>
+                          <option value="Adjective">Tính chất / Tính từ</option>
+                          <option value="Formula">Công thức / Phương trình</option>
+                          <option value="Phrase">Cụm từ / Liên kết</option>
+                          <option value="Grammar">Quy luật / Cú pháp</option>
                         </select>
                       </div>
 
@@ -720,32 +756,32 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                         <select
                           value={card.layer}
                           onChange={(e) => handleCardChange(card.id, 'layer', Number(e.target.value) as KnowledgeLayer)}
-                          className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[10px] font-bold text-zinc-600 dark:text-zinc-400"
+                          className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer"
                         >
-                          <option value={1}>Tầng 1 (Định nghĩa)</option>
-                          <option value={2}>Tầng 2 (Cụm từ)</option>
-                          <option value={3}>Tầng 3 (Quy trình)</option>
-                          <option value={4}>Tầng 4 (Ngữ cảnh)</option>
+                          <option value={1}>Tầng 1 (Khái niệm / Từ khóa)</option>
+                          <option value={2}>Tầng 2 (Công thức / Liên kết)</option>
+                          <option value={3}>Tầng 3 (Quy luật / Logic)</option>
+                          <option value={4}>Tầng 4 (Ứng dụng / Mở rộng)</option>
                         </select>
 
                         <button
                           type="button"
                           onClick={() => handleDeleteCard(card.id)}
                           title="Xóa thẻ"
-                          className="p-1 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-500 hover:bg-rose-50 :bg-rose-950/40 transition"
+                          className="p-1 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Middle Row: Definition (Vietnamese) */}
+                    {/* Middle Row: Definition */}
                     <div>
                       <input
                         type="text"
                         value={card.definition}
                         onChange={(e) => handleCardChange(card.id, 'definition', e.target.value)}
-                        placeholder="Định nghĩa / Giải thích tiếng Việt..."
+                        placeholder="Định nghĩa / Giải nghĩa / Bản chất kiến thức..."
                         className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-white"
                       />
                     </div>
@@ -756,7 +792,7 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                         type="text"
                         value={card.example}
                         onChange={(e) => handleCardChange(card.id, 'example', e.target.value)}
-                        placeholder="Câu ví dụ thực tế tiếng Anh (Example sentence)..."
+                        placeholder="Ví dụ minh họa / Bối cảnh ứng dụng thực tế..."
                         className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] italic text-zinc-600 dark:text-zinc-400"
                       />
                     </div>
@@ -782,7 +818,7 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
                 {showSuccessToast && (
                   <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-xl border border-emerald-200 animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Đã nạp vào kho bài học thành công!</span>
+                    <span>{successToastMsg}</span>
                   </span>
                 )}
               </div>
@@ -790,20 +826,8 @@ KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giả
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    handleSave();
-                    onOpenSimulator();
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-zinc-50 dark:bg-black hover:bg-slate-200 :bg-slate-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold transition"
-                >
-                  <Play className="w-3.5 h-3.5 text-emerald-500 fill-current" />
-                  <span>Mô phỏng Game với bài học này</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={handleSave}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl hover:from-emerald-500 hover:to-teal-500 text-white dark:text-black text-xs font-extrabold shadow-lg shadow-sm transition hover:scale-102 active:scale-98"
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-extrabold shadow-lg shadow-sm transition hover:scale-102 active:scale-98 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Lưu vào kho bài học</span>

@@ -94,5 +94,6 @@ export interface PromptConfig {
   strictCompleteCode: boolean;
   vocabCount: number;
   extractedCards?: ExtractedCard[];
+  rawExtractedDocText?: string;
 }
 

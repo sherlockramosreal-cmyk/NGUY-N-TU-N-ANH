@@ -120,46 +120,120 @@ Ví dụ: Only when the results were announced did the candidates heave a sigh o
 ];
 
 /**
+ * BƯỚC 1: XỬ LÝ DỮ LIỆU NGẦM (SILENT AUTO-CLEAN)
+ * Tự động chạy ngầm việc dọn dẹp khoảng trắng thừa và nối các câu bị rớt dòng (do copy từ PDF)
+ * trước khi đưa vào hàm bóc tách chính. Người dùng không cần thao tác thêm.
+ */
+export function cleanPdfAndWhitespace(rawText: string): string {
+  if (!rawText) return '';
+
+  // 1. Chuẩn hóa xuống dòng và khoảng trắng Unicode (non-breaking space, zero-width, v.v.)
+  const normalized = rawText
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[\u00A0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]/g, ' ');
+
+  const rawLines = normalized.split('\n');
+  const cleanedLines: string[] = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    // Thu gọn khoảng trắng thừa liên tiếp trong từng dòng
+    const line = rawLines[i].replace(/[ \t]+/g, ' ').trim();
+    if (!line) continue;
+
+    if (cleanedLines.length > 0) {
+      const prevLine = cleanedLines[cleanedLines.length - 1];
+
+      // Dấu hiệu dòng mới là một mục độc lập / bullet / tiêu đề:
+      // - Gạch đầu dòng: -, *, •, +, –, —
+      // - Đánh số: 1., 2), [1]
+      // - Khối tiêu đề: Tầng 1, Chương 1, Mục 1, Phần 1...
+      // - Dòng ví dụ minh họa: Example:, Ví dụ:, Ex:
+      const isNewItem = /^[-*•+–—]|\b\d+[\.\)]|^\*{1,2}[^*]+\*{1,2}|^(?:Tầng\s*\d|Chương\s*\d|Phần\s*\d|Mục\s*\d|Example:|Ví dụ:|Ex:)/i.test(line);
+
+      // Kiểm tra dòng trước có kết thúc bằng dấu nối từ do ngắt dòng PDF (hyphenated word-break): "inter-" + "national"
+      const prevEndsWithHyphen = /[-–—]$/.test(prevLine);
+      if (prevEndsWithHyphen && !isNewItem) {
+        cleanedLines[cleanedLines.length - 1] = prevLine.slice(0, -1) + line;
+        continue;
+      }
+
+      // Kiểm tra xem dòng trước có kết thúc bằng dấu chấm câu hoàn chỉnh (. ! ? ;)
+      const prevEndsWithSentencePunct = /[.?!;]$/.test(prevLine);
+      // Dòng trước kết thúc lửng lơ bằng dấu phẩy, mở ngoặc, hai chấm hoặc liên từ
+      const prevEndsWithCommaOrConjunction = /[,(:]$/.test(prevLine) ||
+        /\b(and|or|of|to|in|for|with|is|are|the|a|an|that|which|là|và|của|với|cho|bằng|do|khi|mà|được|như)$/i.test(prevLine);
+      // Dòng hiện tại bắt đầu bằng chữ thường (dấu hiệu rớt dòng điển hình khi copy từ PDF)
+      const currentStartsLowerCase = /^[a-zà-ỹ]/.test(line);
+      // Dòng trước đang là một định nghĩa dở (chứa : hoặc -) nhưng chưa có dấu chấm hết câu và dòng sau không phải mục mới
+      const prevIsOngoingDef = (prevLine.includes(':') || prevLine.includes(' - ')) && !prevEndsWithSentencePunct && !isNewItem;
+
+      if ((currentStartsLowerCase || prevEndsWithCommaOrConjunction || prevIsOngoingDef) && !isNewItem) {
+        cleanedLines[cleanedLines.length - 1] = prevLine + ' ' + line;
+        continue;
+      }
+    }
+
+    cleanedLines.push(line);
+  }
+
+  return cleanedLines.join('\n');
+}
+
+/**
  * Thuật toán bóc tách tự động tài liệu thành 4 tầng kiến thức sư phạm:
- * Tầng 1: Định nghĩa & Khái niệm cốt lõi (Definitions)
- * Tầng 2: Cụm từ, Collocations & Công thức (Phrases & Formulas)
- * Tầng 3: Quy trình & Cấu trúc ngữ pháp (Processes & Syntax)
- * Tầng 4: Ngữ cảnh & Ví dụ ứng dụng thực tế (Context & Examples)
+ * Tầng 1: Khái niệm & Từ khóa cốt lõi (Core Concepts & Keywords)
+ * Tầng 2: Công thức & Mối liên kết (Formulas & Linkages)
+ * Tầng 3: Quy luật & Logic (Rules, Laws & Logic)
+ * Tầng 4: Ứng dụng & Mở rộng (Applications & Extensions)
+ * 
+ * Tích hợp cơ chế:
+ * - BƯỚC 1: Tự động chạy ngầm dọn dẹp khoảng trắng và nối câu rớt dòng từ PDF
+ * - BƯỚC 2: Smart Fallback: Nếu danh sách không có dấu ":" hoặc "-", tự động lấy nguyên dòng
+ *   làm mặt trước thẻ (word), để trống mặt sau (defVi/defEn rỗng) và tự động xếp vào Tầng 1.
  */
 export function extractKnowledgeLayers(rawText: string): ExtractedCard[] {
   const cards: ExtractedCard[] = [];
-  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  // BƯỚC 1: Tự động làm sạch dữ liệu ngầm trước khi bóc tách
+  const cleanedText = cleanPdfAndWhitespace(rawText);
+  const lines = cleanedText.split('\n').map(l => l.trim()).filter(Boolean);
 
   let currentLayer: KnowledgeLayer = 1;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Detect layer headings if present
+    // Nhận diện tiêu đề tầng kiến thức nếu có trong văn bản
     const lower = line.toLowerCase();
-    if (lower.includes('1.') || lower.includes('định nghĩa') || lower.includes('concept') || lower.includes('tầng 1')) {
-      currentLayer = 1;
-    } else if (lower.includes('2.') || lower.includes('cụm từ') || lower.includes('collocation') || lower.includes('công thức') || lower.includes('tầng 2')) {
-      currentLayer = 2;
-    } else if (lower.includes('3.') || lower.includes('quy trình') || lower.includes('cấu trúc') || lower.includes('syntax') || lower.includes('ngữ pháp') || lower.includes('tầng 3')) {
-      currentLayer = 3;
-    } else if (lower.includes('4.') || lower.includes('ngữ cảnh') || lower.includes('ví dụ') || lower.includes('context') || lower.includes('tầng 4')) {
-      currentLayer = 4;
+    const isLayer1Heading = /^(?:#+\s*|==+)?\s*(?:1[\.\)]|tầng\s*1|khái niệm|từ khóa|concept|định nghĩa)/i.test(lower);
+    const isLayer2Heading = /^(?:#+\s*|==+)?\s*(?:2[\.\)]|tầng\s*2|công thức|liên kết|cụm từ|collocation|formula)/i.test(lower);
+    const isLayer3Heading = /^(?:#+\s*|==+)?\s*(?:3[\.\)]|tầng\s*3|quy luật|logic|quy trình|cấu trúc|syntax|ngữ pháp)/i.test(lower);
+    const isLayer4Heading = /^(?:#+\s*|==+)?\s*(?:4[\.\)]|tầng\s*4|ứng dụng|mở rộng|ngữ cảnh|ví dụ|context)/i.test(lower);
+
+    if (isLayer1Heading) currentLayer = 1;
+    else if (isLayer2Heading) currentLayer = 2;
+    else if (isLayer3Heading) currentLayer = 3;
+    else if (isLayer4Heading) currentLayer = 4;
+
+    // Bỏ qua nếu dòng này là dòng tiêu đề phân cách thuần túy
+    const isPureHeading = /^(?:#+\s*|===+\s*|--+\s*|Tầng\s*[1-4]\s*:?$|Phần\s*\d+\s*:?$)/i.test(line);
+    if (isPureHeading) {
+      continue;
     }
 
-    // Pattern 1: Bold keywords with phonetic and POS: - **term** [ipa] / /ipa/ (noun/adj): definition
-    const boldMatch = line.match(/^[-*•]?\s*\*\*([^*]+)\*\*(?:\s*(?:\[([^\]]+)\]|\/([^/]+)\/))?(?:\s*\(([^)]+)\))?\s*[:\-–]\s*(.+)$/i);
+    // Pattern 1: Bold keywords with phonetic, POS and definition: - **term** [ipa] (noun): definition
+    const boldMatch = line.match(/^[-*•]?\s*\*\*([^*]+)\*\*(?:\s*(?:\[([^\]]+)\]|\/([^/]+)\/))?(?:\s*\(([^)]+)\))?\s*[:\-–—]\s*(.+)$/i);
     if (boldMatch) {
       const term = boldMatch[1].trim();
       const phonetic = (boldMatch[2] ? `[${boldMatch[2].trim()}]` : boldMatch[3] ? `/${boldMatch[3].trim()}/` : '');
       const posRaw = boldMatch[4]?.toLowerCase() || '';
       const definition = boldMatch[5]?.trim() || '';
 
-      // Check next line for Example:
+      // Kiểm tra dòng kế tiếp xem có câu ví dụ minh họa hay không
       let example = '';
-      if (i + 1 < lines.length && (lines[i + 1].startsWith('Example:') || lines[i + 1].startsWith('Ví dụ:'))) {
-        example = lines[i + 1].replace(/^(?:Example|Ví dụ):\s*/i, '').trim();
-        i++; // skip example line
+      if (i + 1 < lines.length && (lines[i + 1].startsWith('Example:') || lines[i + 1].startsWith('Ví dụ:') || lines[i + 1].startsWith('Ex:'))) {
+        example = lines[i + 1].replace(/^(?:Example|Ví dụ|Ex):\s*/i, '').trim();
+        i++; // bỏ qua dòng ví dụ đã gom
       }
 
       let pos: ExtractedCard['pos'] = 'Noun';
@@ -176,59 +250,62 @@ export function extractKnowledgeLayers(rawText: string): ExtractedCard[] {
         phonetic,
         pos,
         definition,
-        example: example || `The term "${term}" is commonly utilized in academic and communicative English contexts.`,
+        example: example || `Áp dụng "${term}" trong ngữ cảnh thực hành.`,
         layer: currentLayer,
       });
       continue;
     }
 
-    // Pattern 2: Dash item with colon: - term: definition
-    const dashMatch = line.match(/^[-*•]\s*([^:–]+)\s*[:–]\s*(.+)$/);
-    if (dashMatch) {
-      const term = dashMatch[1].replace(/\*\*/g, '').trim();
-      const def = dashMatch[2].replace(/\*\*/g, '').trim();
+    // Pattern 2: Dòng có dấu phân cách ":" hoặc "-" hoặc "–" kèm định nghĩa
+    const sepMatch = line.match(/^[-*•+–—]?\s*(?:(?:\d+[\.\)])\s*)?([^:–—=]+?)\s*[:–—=]\s*(.+)$/);
+    if (sepMatch) {
+      const term = sepMatch[1].replace(/\*\*/g, '').trim();
+      const def = sepMatch[2].replace(/\*\*/g, '').trim();
 
-      // Ignore section headers
-      if (term.length > 50 || def.length < 2) continue;
+      // Nếu độ dài hợp lý thì bóc tách thành thẻ hoàn chỉnh
+      if (term.length <= 80 && def.length >= 1) {
+        let example = '';
+        if (i + 1 < lines.length && (lines[i + 1].startsWith('Example:') || lines[i + 1].startsWith('Ví dụ:') || lines[i + 1].startsWith('Ex:'))) {
+          example = lines[i + 1].replace(/^(?:Example|Ví dụ|Ex):\s*/i, '').trim();
+          i++;
+        }
 
-      let example = '';
-      if (i + 1 < lines.length && (lines[i + 1].startsWith('Example:') || lines[i + 1].startsWith('Ví dụ:'))) {
-        example = lines[i + 1].replace(/^(?:Example|Ví dụ):\s*/i, '').trim();
-        i++;
+        const layerAssigned: KnowledgeLayer = term.includes(' ') && term.split(' ').length >= 3 
+          ? 2 
+          : (lower.includes('rule') || lower.includes('cấu trúc') || lower.includes('inversion') ? 3 : currentLayer);
+
+        cards.push({
+          id: `card_${Date.now()}_${cards.length + 1}`,
+          term,
+          pos: inferPOS(term),
+          definition: def,
+          example: example || `Áp dụng "${term}" trong các bài tập và ngữ cảnh thực tế.`,
+          layer: layerAssigned,
+        });
+        continue;
       }
+    }
 
-      const layerAssigned: KnowledgeLayer = term.includes(' ') && term.split(' ').length >= 3 
-        ? 2 
-        : (lower.includes('rule') || lower.includes('cấu trúc') || lower.includes('inversion') ? 3 : currentLayer);
+    // BƯỚC 2: CƠ CHẾ BÓC TÁCH LINH HOẠT (SMART FALLBACK)
+    // Nếu người dùng nhập/dán một danh sách không có dấu ":" hoặc "-", thuật toán không được báo lỗi hay bỏ qua.
+    // Thay vào đó, tự động lấy nguyên dòng text đó làm mặt trước thẻ (word), để trống mặt sau (defVi/defEn rỗng) và tự động xếp thẻ đó vào Tầng 1.
+    const cleanWord = line
+      .replace(/^[-*•+–—\d]+[\.\)]\s*/, '')
+      .replace(/^[-*•+–—]\s*/, '')
+      .replace(/\*\*/g, '')
+      .trim();
 
+    if (cleanWord.length > 0) {
       cards.push({
         id: `card_${Date.now()}_${cards.length + 1}`,
-        term,
-        pos: inferPOS(term),
-        definition: def,
-        example: example || `Practicing "${term}" helps solidify deep understanding of English language patterns.`,
-        layer: layerAssigned,
+        term: cleanWord,
+        phonetic: '',
+        pos: inferPOS(cleanWord),
+        definition: '', // để trống mặt sau (defVi/defEn rỗng)
+        example: '',    // để trống
+        layer: 1,       // tự động xếp thẻ đó vào Tầng 1
       });
-      continue;
     }
-  }
-
-  // Fallback: If no structured items detected, extract key vocabulary phrases
-  if (cards.length === 0) {
-    const words = rawText.match(/\b[A-Za-z\-]{4,}\b/g) || [];
-    const uniqueWords = Array.from(new Set(words)).slice(0, 8);
-
-    uniqueWords.forEach((word, idx) => {
-      const layer = ((idx % 4) + 1) as KnowledgeLayer;
-      cards.push({
-        id: `card_auto_${idx + 1}`,
-        term: word.toLowerCase(),
-        pos: inferPOS(word),
-        definition: `Khái niệm hoặc thuật ngữ học thuật trích xuất từ tài liệu: "${word}".`,
-        example: `Students should actively apply "${word}" when writing essays and taking tests.`,
-        layer,
-      });
-    });
   }
 
   return cards;

@@ -319,101 +319,6 @@ export const THEORY_PRESETS = [
   }
 ];
 
-export const PRESET_TEMPLATES = [
-  {
-    id: 'thpt_standard',
-    name: '🏆 Ôn thi THPT Quốc Gia Chuẩn',
-    description: 'Tập trung Lớp 12, phân tích bẫy sai ngữ pháp, 3D Flashcard, Exam Mode và 4 Mini-games trọng điểm.',
-    config: {
-      gradeLevel: 'lop12' as GradeLevel,
-      examTargets: ['thptqg'] as ExamTarget[],
-      lessonTopic: 'High-Frequency Exam Traps & Idiomatic Phrasal Verbs',
-      theoryContent: THEORY_PRESETS[0].content,
-      sampleContent: SAMPLE_VOCABULARY_DEFAULT,
-      studyModes: ['flashcard3d', 'active_recall', 'exam_mode', 'export_pdf'] as StudyMode[],
-      selectedGames: ['tetris', 'penalty', 'truefalse', 'scramble'] as MiniGameId[],
-      colorTheme: 'indigo' as const,
-      primaryColor: '#18181b',
-      accentColor: '#27272a',
-      uiStyle: 'minimalist' as const,
-      fontChoice: 'arial' as const,
-      systemUtilities: ['web_audio', 'dark_mode'] as const,
-      outputFormat: 'single_file_html' as const,
-      strictCompleteCode: true,
-      vocabCount: 10,
-    },
-  },
-  {
-    id: 'ielts_master',
-    name: '🎓 IELTS Academic Master C1',
-    description: 'Chuyên sâu từ vựng AWL, phân tầng Paraphrasing, trích xuất 4 tầng và đầy đủ 7 mini-game luyện phản xạ từ.',
-    config: {
-      gradeLevel: 'lop12' as GradeLevel,
-      examTargets: ['ielts', 'vact'] as ExamTarget[],
-      lessonTopic: 'Academic Word List (AWL) & Formal Collocations C1',
-      theoryContent: THEORY_PRESETS[3].content,
-      sampleContent: SAMPLE_VOCABULARY_DEFAULT,
-      studyModes: ['flashcard3d', 'active_recall', 'exam_mode', 'doc_extractor', 'export_pdf'] as StudyMode[],
-      selectedGames: ['tetris', 'dino', 'penalty', 'dragdrop', 'truefalse', 'scramble', 'hangman'] as MiniGameId[],
-      colorTheme: 'emerald' as const,
-      primaryColor: '#059669',
-      accentColor: '#0d9488',
-      uiStyle: 'glassmorphism' as const,
-      fontChoice: 'times' as const,
-      systemUtilities: ['web_audio', 'dark_mode'] as const,
-      outputFormat: 'single_file_html' as const,
-      strictCompleteCode: true,
-      vocabCount: 12,
-    },
-  },
-  {
-    id: 'arcade_game',
-    name: '🕹️ Gamification Arcade Toàn Diện (NCKH 2026)',
-    description: 'Kích hoạt toàn bộ 7 Game Canvas/DOM Engine, Web Audio và 4 chế độ học thuật.',
-    config: {
-      gradeLevel: 'lop11' as GradeLevel,
-      examTargets: ['thptqg', 'ielts', 'vact', 'giaotiep'] as ExamTarget[],
-      lessonTopic: 'Environment, Tech & Education 4.0 Interactive Gamification',
-      theoryContent: THEORY_PRESETS[1].content,
-      sampleContent: SAMPLE_VOCABULARY_DEFAULT,
-      studyModes: ['flashcard3d', 'active_recall', 'exam_mode', 'doc_extractor', 'export_pdf'] as StudyMode[],
-      selectedGames: ['tetris', 'dino', 'penalty', 'dragdrop', 'truefalse', 'scramble', 'hangman'] as MiniGameId[],
-      colorTheme: 'cyberpunk' as const,
-      primaryColor: '#06b6d4',
-      accentColor: '#8b5cf6',
-      uiStyle: 'playful' as const,
-      fontChoice: 'tahoma' as const,
-      systemUtilities: ['web_audio', 'dark_mode'] as const,
-      outputFormat: 'single_file_html' as const,
-      strictCompleteCode: true,
-      vocabCount: 10,
-    },
-  },
-  {
-    id: 'grade10_foundation',
-    name: '🌱 Lớp 10 Nền Tảng & Giao Tiếp',
-    description: 'Từ vựng SGK GDPT 2018, nhận diện từ loại IPA, câu ví đời sống, phản xạ Đúng/Sai 3s và Thẻ 3D trực quan.',
-    config: {
-      gradeLevel: 'lop10' as GradeLevel,
-      examTargets: ['giaotiep'] as ExamTarget[],
-      lessonTopic: 'Everyday Communication & Core Vocabulary Grade 10',
-      theoryContent: '',
-      sampleContent: SAMPLE_VOCABULARY_DEFAULT,
-      studyModes: ['flashcard3d', 'active_recall', 'export_pdf'] as StudyMode[],
-      selectedGames: ['dragdrop', 'truefalse', 'hangman'] as MiniGameId[],
-      colorTheme: 'amber' as const,
-      primaryColor: '#d97706',
-      accentColor: '#f97316',
-      uiStyle: 'minimalist' as const,
-      fontChoice: 'calibri' as const,
-      systemUtilities: ['web_audio', 'dark_mode'] as const,
-      outputFormat: 'single_file_html' as const,
-      strictCompleteCode: true,
-      vocabCount: 10,
-    },
-  },
-];
-
 /**
  * Detects whether the current prompt configuration targets English language learning (IELTS, ESL, THPTQG English)
  * or Pure Vietnamese subject knowledge (History, Geography, Civic Education, General Vietnamese studies, etc.)
@@ -471,8 +376,6 @@ export function isEnglishTarget(config: PromptConfig): boolean {
 
 export function compileMasterPrompt(config: PromptConfig): string | string[] {
   const isEnglish = isEnglishTarget(config);
-  const gradePrompt = getGradePedagogyPrompt(config.gradeLevel, isEnglish);
-  const examPrompts = Array.from(new Set(config.examTargets.map(target => getExamPedagogyPrompt(target, isEnglish)).filter(Boolean))).join('\n\n');
   const studyModePrompts = Array.from(new Set(config.studyModes.map(mode => getStudyModePrompt(mode, isEnglish)).filter(Boolean))).join('\n\n');
   const miniGamePrompts = Array.from(new Set(config.selectedGames.map(gameId => getMiniGamePrompt(gameId, isEnglish)).filter(Boolean))).join('\n\n');
   const designPrompt = getDesignSystemPrompt(config);
@@ -480,41 +383,12 @@ export function compileMasterPrompt(config: PromptConfig): string | string[] {
 
   const appHeadline = 'ỨNG DỤNG WEB HỌC TẬP & ÔN LUYỆN KIẾN THỨC TƯƠNG TÁC (Học Thuộc Thông Minh & Gamification Arcade)';
 
-  const datasetExtractionRules = isEnglish
-    ? `[QUY TẮC BẮT BUỘC DÀNH CHO AI (GEMINI TRONG AI STUDIO)]:
+  const datasetExtractionRules = `[QUY TẮC BẮT BUỘC DÀNH CHO AI (GEMINI TRONG AI STUDIO)]:
 HỆ THỐNG MÃ NGUỒN được tạo ra PHẢI tích hợp thuật toán để TỰ ĐỘNG THỰC HIỆN 4 BƯỚC TINH LỌC NỘI DUNG SAU KHI NGƯỜI DÙNG NHẬP LIỆU:
 1. TRÌNH BÀY MỤC LỤC & DÀN Ý BÀI HỌC (Table of Contents / Navigation Outline): Tạo một mục lục trực quan ở đầu trang với các phần đánh số rõ ràng để người học nắm trọn cấu trúc kiến thức.
-2. BÓC TÁCH VÀ KHỞI TẠO TẬP TỪ VỰNG CHUẨN HÓA TIẾNG ANH: Trích xuất ít nhất ${config.vocabCount} từ vựng/thuật ngữ cốt lõi gắn liền với chủ đề và bối cảnh bài viết, khởi tạo thành mảng JSON đầy đủ:
-   {
-     id: number,
-     word: string,
-     type: string (ví dụ: 'noun', 'verb', 'adj', 'adv'),
-     ipa: string (phiên âm quốc tế chuẩn),
-     def_en: string (định nghĩa tiếng Anh súc tích),
-     def_vi: string (nghĩa tiếng Việt chuẩn xác),
-     collocations: string[] (ít nhất 2-3 cụm từ kết hợp nâng cao),
-     example_en: string (câu ví dụ chuẩn văn phong học thuật/đời sống),
-     example_vi: string (dịch nghĩa tiếng Việt câu ví dụ)
-   }
-3. TỔNG HỢP BẢNG TÓM TẮT LÝ THUYẾT & QUY TẮC NGỮ PHÁP (Theory Cheat Sheet): Đúc kết các điểm lý thuyết, bẫy ngữ pháp và mẹo làm bài thành thẻ ghi nhớ đẹp mắt.
-4. ĐỒNG BỘ TOÀN DIỆN VÀO TẤT CẢ MINI-GAMES & CHẾ ĐỘ THI: Đưa bộ từ vựng và câu hỏi ngữ pháp vào Flashcard 3D, Active Recall, Exam Mode, Xếp gạch, Khủng long, Penalty...`
-    : `[QUY TẮC BẮT BUỘC DÀNH CHO AI (GEMINI TRONG AI STUDIO)]:
-HỆ THỐNG MÃ NGUỒN được tạo ra PHẢI tích hợp thuật toán để TỰ ĐỘNG THỰC HIỆN 4 BƯỚC TINH LỌC NỘI DUNG SAU KHI NGƯỜI DÙNG NHẬP LIỆU (KIẾN THỨC TIẾNG VIỆT THUẦN TÚY):
-1. TRÌNH BÀY MỤC LỤC & DÀN Ý BÀI HỌC (Table of Contents / Navigation Outline): Tạo một mục lục trực quan ở đầu trang với các phần đánh số rõ ràng (1. Tổng quan, 2. Khái niệm cốt lõi, 3. Diễn biến / Bản chất, 4. Ý nghĩa / Bài học thực tiễn) để người học nắm trọn cấu trúc kiến thức bài học.
-2. BÓC TÁCH VÀ KHỞI TẠO TẬP KIẾN THỨC TIẾNG VIỆT THUẦN TÚY (TUYỆT ĐỐI KHÔNG DỊCH SANG TIẾNG ANH): Trích xuất ít nhất ${config.vocabCount} thuật ngữ / khái niệm / sự kiện lịch sử / tên nhân vật / công thức cốt lõi từ bài học, khởi tạo thành mảng JSON Tiếng Việt chuẩn xác:
-   {
-     id: number,
-     term: string, // Thuật ngữ / Sự kiện / Tên nhân vật / Khái niệm cốt lõi bằng Tiếng Việt
-     definition: string, // Định nghĩa / Ý nghĩa lịch sử / Bản chất kiến thức bằng Tiếng Việt súc tích
-     context: string // Bối cảnh ra đời / Mốc thời gian / Chi tiết thực tế / Ứng dụng bằng Tiếng Việt
-   }
-   * QUY TẮC BẮT BUỘC DÀNH CHO GEMINI:
-     - Giữ nguyên 100% TIẾNG VIỆT THUẦN TÚY.
-     - TUYỆT ĐỐI KHÔNG TỰ Ý DỊCH SANG TIẾNG ANH.
-     - KHÔNG YÊU CẦU trường 'ipa' (phiên âm) hay 'collocations'.
-     - KHÔNG phân loại từ loại tiếng Anh (noun/verb/adj).
-3. TỔNG HỢP BẢNG TÓM TẮT LÝ THUYẾT & NỘI DUNG TRỌNG TÂM (Theory Cheat Sheet): Đúc kết các ý chính, mốc sự kiện quan trọng, công thức hoặc quy tắc cốt lõi thành thẻ ghi nhớ đẹp mắt.
-4. ĐỒNG BỘ TOÀN DIỆN VÀO TẤT CẢ MINI-GAMES & CHẾ ĐỘ THI: Đưa bộ thuật ngữ, định nghĩa và bối cảnh Tiếng Việt vào Flashcard 3D, Active Recall Quiz, Exam Mode, Xếp gạch, Khủng long, Penalty... hoàn toàn bằng Tiếng Việt.`;
+2. BÓC TÁCH VÀ KHỞI TẠO DỮ LIỆU HỌC THUẬT: Tự động trích xuất ít nhất 5-10 thuật ngữ/khái niệm/sự kiện cốt lõi từ văn bản nguồn. TUYỆT ĐỐI tuân thủ một trong các cấu trúc JSON đã xác định ở Mục 3 (Dynamic Parser). Tự động điền logic các trường dữ liệu (mặt trước hiển thị từ khóa, mặt sau hiển thị giải nghĩa/công thức/hệ quả tương ứng).
+3. TỔNG HỢP BẢNG TÓM TẮT LÝ THUYẾT & NỘI DUNG TRỌNG TÂM (Theory Cheat Sheet): Đúc kết các điểm lý thuyết, bẫy kiến thức, công thức và quy tắc cốt lõi thành thẻ ghi nhớ đẹp mắt.
+4. ĐỒNG BỘ TOÀN DIỆN VÀO TẤT CẢ MINI-GAMES & CHẾ ĐỘ THI: Đưa bộ dữ liệu học thuật vào Flashcard 3D, Active Recall, Exam Mode, Xếp gạch, Khủng long, Penalty...`;
 
   const basePrompt = `Bạn là một Chuyên gia Lập trình Game Sư phạm và Kỹ sư Web Frontend Cao cấp (Senior EdTech & Game Web Developer).
 Hãy viết mã nguồn hoàn chỉnh 100% cho một ${appHeadline} theo chuẩn đề tài Nghiên cứu Khoa học THPT năm 2026.
@@ -640,28 +514,30 @@ ${technicalPrompt}
     KẾT QUẢ ĐẦU RA: Chỉ trả về mã Markdown hoàn chỉnh. Không giải thích, không xin chào, không có bất kỳ văn bản giao tiếp nào khác ngoài nội dung tài liệu đã xử lý."
 
 ===================================================================
-3. MỤC TIÊU SƯ PHẠM & ĐẶC TẢ ĐỐI TƯỢNG HỌC TẬP:
+3. CƠ CHẾ NHẬN DIỆN MÔN HỌC & BÓC TÁCH ĐỘNG (DYNAMIC PARSER):
 ===================================================================
-${gradePrompt}
+Tự động phân tích toàn bộ văn bản đầu vào (Input) của người dùng, xác định môn học/lĩnh vực và bóc tách thành mảng JSON theo 1 trong 3 Lược đồ (Schema) chuẩn sau:
 
-${examPrompts ? `[ĐẶC TẢ ĐỊNH HƯỚNG THI CỬ & BỔ TRỢ ĐÃ CHỌN]:\n${examPrompts}` : ''}
+LỰA CHỌN 1: NẾU INPUT LÀ NGÔN NGỮ (Tiếng Anh, IELTS, SAT, v.v.)
+Trích xuất từ vựng, từ đồng nghĩa và ngữ cảnh. Cấu trúc JSON:
+{ "id": number, "word": "Từ vựng/Cụm từ", "ipa": "[Phiên âm]", "type": "Từ loại", "defVi": "Nghĩa tiếng Việt", "defEn": "Nghĩa tiếng Anh/Synonyms", "example": "Câu ví dụ chứa từ vựng" }
+
+LỰA CHỌN 2: NẾU INPUT LÀ KHOA HỌC TỰ NHIÊN (Toán, Vật Lý, Hóa Học, Sinh Học)
+Trích xuất định lý, phương trình, khái niệm. CHÚ Ý BẢO TOÀN DẤU TRỪ TRONG CÔNG THỨC LATEX. Cấu trúc JSON:
+{ "id": number, "word": "Tên Khái niệm / Chất / Hiện tượng", "ipa": "[Chuyên mục]", "type": "concept", "defVi": "Định nghĩa / Tính chất", "defEn": "Công thức / Phương trình (Bọc trong $...$ hoặc $$...$$)", "example": "Ví dụ minh họa / Hệ quả" }
+
+LỰA CHỌN 3: NẾU INPUT LÀ KHOA HỌC XÃ HỘI (Ngữ Văn, Lịch Sử, Địa Lý, Luật)
+Trích xuất sự kiện, nhân vật, tác phẩm, điều luật. Cấu trúc JSON:
+{ "id": number, "word": "Tên Sự kiện / Tác phẩm / Điều luật", "ipa": "[Thời gian/Địa điểm]", "type": "fact", "defVi": "Nội dung chính / Diễn biến", "defEn": "Ý nghĩa / Tác động", "example": "Trích dẫn tiêu biểu / Bình luận" }
+
+YÊU CẦU ĐỒNG BỘ GAME: 
+Dù chọn Lược đồ nào, dữ liệu bóc tách phải map (ánh xạ) chuẩn xác vào bộ khung 7 Mini-games (Flashcard, Word Match, Speed True/False, v.v.). Mặt trước thẻ luôn là \`word\`, mặt sau luôn là tổng hợp của \`defVi\` và \`defEn\`.
 
 ===================================================================
-4. DỮ LIỆU BÀI HỌC: CHỦ ĐỀ, MỤC LỤC, LÝ THUYẾT & TẬP DỮ LIỆU (DATASET):
+4. DỮ LIỆU BÀI HỌC VÀ LÝ THUYẾT:
 ===================================================================
-- Tên bài học / Chủ đề chính: "${config.lessonTopic}"
-
-${datasetExtractionRules}
-
-${config.theoryContent && config.theoryContent.trim() ? `[LÝ THUYẾT & QUY TẮC TRỌNG TÂM DO GIÁO VIÊN/NGƯỜI DÙNG CUNG CẤP]:
-${config.theoryContent.trim()}
-
-* YÊU CẦU TÍCH HỢP LÝ THUYẾT VÀO WEB:
-1. Xây dựng một Tab/Khu vực "Ghi nhớ Lý thuyết & Cấu trúc" (Theory Cheat Sheet) trực quan, có thẻ tóm tắt công thức, mốc sự kiện và bối cảnh thực tế.
-2. Tự động lồng ghép các quy tắc và nội dung trên vào câu hỏi của chế độ "Học & Nhớ (Active Recall)", "Bài kiểm tra (Exam Mode)" và các Mini-Games.
-` : `- Lý thuyết bổ sung: AI tự động phân tích và đúc kết các điểm lý thuyết trọng tâm từ nội dung chủ đề bài học.`}
-
-${config.sampleContent && config.sampleContent.trim() ? `[DỮ LIỆU NGUỒN / MỤC LỤC & VĂN BẢN TRÍCH XUẤT CỦA BÀI HỌC]:\n${config.sampleContent.trim()}\n` : ''}
+[DỮ LIỆU ĐẦU VÀO CỦA NGƯỜI DÙNG]:
+${config.sampleContent ? config.sampleContent.trim() : ''}
 
 ===================================================================
 5. ĐẶC TẢ CHI TIẾT CÁC CHẾ ĐỘ HỌC THUẬT (ACADEMIC MODES):
@@ -747,7 +623,7 @@ Yêu cầu hệ thống hiển thị hoàn hảo trên mọi kích thước màn
 ===================================================================
 10. BỘ QUY TẮC THÉP CHỐNG LỖI (ZERO-BUG GUARANTEE):
 ===================================================================
-- GIẢI QUYẾT XUNG ĐỘT SINGLE-FILE BẰNG BABEL: Vì xuất ra Single-file HTML, bạn BẮT BUỘC phải tạo một file .html duy nhất. Trong thẻ <head>, phải nhúng ĐẦY ĐỦ các CDN: React, ReactDOM, Babel Standalone (để dịch JSX/TSX ngay trên trình duyệt), TailwindCSS script, và KaTeX (CSS & JS). Toàn bộ code React Component phải đặt trong thẻ <script type="text/babel" data-type="module">.
+- GIẢI QUYẾT XUNG ĐỘT SINGLE-FILE BẰNG BABEL: BẮT BUỘC tạo 1 file \`.html\` duy nhất. Code React đặt trong \`<script type="text/babel" data-type="module">\`. Tuyệt đối không sinh mã TypeScript để tránh lỗi trắng trang.
 - AN TOÀN DOM VỚI KATEX: Trong component <LatexRenderer/>, TUYỆT ĐỐI không chèn trực tiếp HTML string vào JSX. Phải chạy katex.renderToString() và bọc kết quả bằng thuộc tính \`dangerouslySetInnerHTML={{ __html: ... }}\` để React không bị crash.
 - QUY TẮC NỐI CODE KHI TRÀN TOKEN: Khi tôi gõ "Tiếp tục", bạn KHÔNG ĐƯỢC giải thích, KHÔNG ĐƯỢC viết lại các hàm đã viết. Hãy mở đầu bằng comment: \`// [TIẾP TỤC] Nối tiếp logic của Component/Function [Tên] đang viết dở...\` và duy trì chính xác scope của các ngoặc nhọn { } bị thiếu.
 - BẢO VỆ ICONS: TUYỆT ĐỐI KHÔNG import bất kỳ thư viện icon nào qua npm. BẮT BUỘC nhúng trực tiếp CDN FontAwesome (https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css) vào thẻ <head> và dùng thẻ <i className="fas fa-..."></i>, HOẶC tự vẽ bằng Inline SVG. Tuyệt đối không dùng thẻ <img> gọi link ngoài.
@@ -768,15 +644,45 @@ Yêu cầu hệ thống hiển thị hoàn hảo trên mọi kích thước màn
 3. Hoàn thiện hệ thống tính điểm, lưu LocalStorage và hoàn thiện file HTML cuối cùng.
 - LỆNH CHỐT: Đảm bảo toàn bộ 100% ứng dụng chạy mượt mà ngay trên trình duyệt mà không cần chạy server NodeJS.`;
 
-    return [prompt1, prompt2, prompt3];
+    const rawBlock = config.rawExtractedDocText && config.rawExtractedDocText.trim()
+      ? `\n\n===================================================================
+[CHỈ THỊ ĐẶC BIỆT DÀNH CHO AI TRONG AI STUDIO: PHÂN TÍCH & BÓC TÁCH DỮ LIỆU]
+===================================================================
+Dưới đây là tài liệu thô do người dùng nhập. BẠN PHẢI ĐÓNG VAI TRÒ CHUYÊN GIA ĐỂ TỰ ĐỘNG BÓC TÁCH TRƯỚC KHI VIẾT CODE:
+1. Đọc và phân tích toàn bộ văn bản thô này.
+2. Tự động trích xuất các Khái niệm, Công thức (dùng KaTeX), Định luật hoặc Từ vựng trọng tâm.
+3. Phân loại chúng thành một mảng dữ liệu JSON chuẩn theo Lược đồ 4 Tầng Sư Phạm (Tầng 1: Khái niệm; Tầng 2: Liên kết; Tầng 3: Quy luật; Tầng 4: Ứng dụng).
+4. TỰ ĐỘNG HARDCODE mảng JSON này vào State mặc định ban đầu của React để 7 Mini-games có dữ liệu khởi chạy ngay lập tức.
+
+[TÀI LIỆU CẦN BÓC TÁCH]:
+${config.rawExtractedDocText.trim()}
+===================================================================`
+      : '';
+
+    return [prompt1 + rawBlock, prompt2, prompt3];
   }
+
+  const rawDocumentSpecialBlock = config.rawExtractedDocText && config.rawExtractedDocText.trim()
+    ? `\n\n===================================================================
+[CHỈ THỊ ĐẶC BIỆT DÀNH CHO AI TRONG AI STUDIO: PHÂN TÍCH & BÓC TÁCH DỮ LIỆU]
+===================================================================
+Dưới đây là tài liệu thô do người dùng nhập. BẠN PHẢI ĐÓNG VAI TRÒ CHUYÊN GIA ĐỂ TỰ ĐỘNG BÓC TÁCH TRƯỚC KHI VIẾT CODE:
+1. Đọc và phân tích toàn bộ văn bản thô này.
+2. Tự động trích xuất các Khái niệm, Công thức (dùng KaTeX), Định luật hoặc Từ vựng trọng tâm.
+3. Phân loại chúng thành một mảng dữ liệu JSON chuẩn theo Lược đồ 4 Tầng Sư Phạm (Tầng 1: Khái niệm; Tầng 2: Liên kết; Tầng 3: Quy luật; Tầng 4: Ứng dụng).
+4. TỰ ĐỘNG HARDCODE mảng JSON này vào State mặc định ban đầu của React để 7 Mini-games có dữ liệu khởi chạy ngay lập tức.
+
+[TÀI LIỆU CẦN BÓC TÁCH]:
+${config.rawExtractedDocText.trim()}
+===================================================================`
+    : '';
 
   return basePrompt + `- Hãy xuất mã nguồn hoàn chỉnh 100% trong một khối mã duy nhất, không dùng placeholder (không dùng // TODO, // tự viết tiếp), không cắt ngắn logic.
 - "PHAO CỨU SINH" XỬ LÝ GIỚI HẠN BỘ NHỚ (Token Limit Lifesaver): Nếu mã nguồn quá dài và vượt giới hạn bộ nhớ của một lần trả lời, hãy DỪNG LẠI ở một hàm/thẻ hoàn chỉnh. Tuyệt đối không được cắt xén logic để ép cho vừa. Tôi sẽ gõ 'Tiếp tục' để bạn viết phần code còn lại.
-- Kiểm tra cẩn thận các sự kiện click, touch, keyboard, Web Audio API và LocalStorage để toàn bộ các game và chế độ học đều có thể chơi mượt mà ngay trên trình duyệt.`;
+- Kiểm tra cẩn thận các sự kiện click, touch, keyboard, Web Audio API và LocalStorage để toàn bộ các game và chế độ học đều có thể chơi mượt mà ngay trên trình duyệt.` + rawDocumentSpecialBlock;
 }
 
-function getGradePedagogyPrompt(grade: GradeLevel, isEnglish = true): string {
+export function getGradePedagogyPrompt(grade: GradeLevel, isEnglish = true): string {
   if (!isEnglish) {
     switch (grade) {
       case 'lop10':
@@ -816,7 +722,7 @@ function getGradePedagogyPrompt(grade: GradeLevel, isEnglish = true): string {
   }
 }
 
-function getExamPedagogyPrompt(target: ExamTarget, isEnglish = true): string {
+export function getExamPedagogyPrompt(target: ExamTarget, isEnglish = true): string {
   if (!isEnglish) {
     switch (target) {
       case 'thptqg':
@@ -955,17 +861,11 @@ Yêu cầu định dạng JSON nghiêm ngặt:
 function getStudyModePrompt(mode: StudyMode, isEnglish = true): string {
   switch (mode) {
     case 'flashcard3d':
-      return isEnglish
-        ? `4.1. Thẻ ghi nhớ 3D (3D Flashcard):
+      return `4.1. Thẻ ghi nhớ 3D (3D Flashcard):
 - Hiệu ứng lật thẻ 3D hai mặt (perspective: 1000px, transform-style: preserve-3d, backface-visibility: hidden). Click hoặc bấm phím Space để lật.
-- Mặt trước: Từ vựng to đậm, Loại từ (badge), Phiên âm IPA.
-- Mặt sau: Định nghĩa tiếng Anh, Bản dịch tiếng Việt, Cụm Collocations in đậm và Câu ví dụ thực tế có bôi đậm từ khóa.
-- Thanh công cụ thẻ: Nút Xáo thẻ (Shuffle), thanh tiến trình (Thẻ X/Y), nút đánh dấu "Đã thuộc (Mastered) / Cần ôn lại (Review)".`
-        : `4.1. Thẻ ghi nhớ 3D (3D Flashcard - Thuần Tiếng Việt):
-- Hiệu ứng lật thẻ 3D hai mặt (perspective: 1000px, transform-style: preserve-3d, backface-visibility: hidden). Click hoặc bấm phím Space để lật.
-- Mặt trước: Thuật ngữ / Sự kiện / Tên nhân vật / Khái niệm (term) to đậm rõ ràng, dễ nhìn.
-- Mặt sau: Định nghĩa / Ý nghĩa lịch sử (definition), Bối cảnh / Mốc thời gian / Chi tiết thực tế (context) có bôi đậm từ khóa.
-- Thanh công cụ thẻ: Nút Xáo thẻ (Shuffle), thanh tiến trình (Thẻ X/Y), nút đánh dấu "Đã thuộc / Cần ôn lại".`;
+- Mặt trước: Hiển thị từ khóa / khái niệm / thuật ngữ chính yếu thật to, rõ.
+- Mặt sau: Hiển thị chi tiết định nghĩa, công thức KaTeX, tính chất hoặc bản dịch tương ứng. Đi kèm ví dụ minh họa.
+- Thanh công cụ thẻ: Nút Xáo thẻ (Shuffle), thanh tiến trình (Thẻ X/Y), nút đánh dấu "Đã thuộc (Mastered) / Cần ôn lại (Review)".`;
 
     case 'active_recall':
       return isEnglish
@@ -992,7 +892,7 @@ function getStudyModePrompt(mode: StudyMode, isEnglish = true): string {
     case 'doc_extractor':
       return isEnglish
         ? `4.0. [BẮT BUỘC MỨC ĐỘ CAO NHẤT]: FORM NẠP DỮ LIỆU TỰ CO GIÃN ĐỘ CAO (AUTO-EXPANDING) & THUẬT TOÁN BÓC TÁCH BẰNG DẤU HAI CHẤM ":" VÀ DẤU GẠCH NGANG "-":
-- BỐ TRÍ NGAY TRÊN GIAO DIỆN CHÍNH: Cung cấp một Tab/Khung "📥 Nạp Bài Học Mới" nổi bật, cho phép người dùng (giáo viên/học sinh) copy & dán trực tiếp bất kỳ danh sách từ vựng hoặc đoạn văn bản tiếng Anh nào.
+- BỐ TRÍ NGAY TRÊN GIAO DIỆN CHÍNH: Cung cấp một Tab/Khung "📥 Nạp Bài Học Mới" nổi bật, cho phép người dùng (giáo viên/học sinh) copy & dán trực tiếp bất kỳ tài liệu, đề thi hoặc văn bản học thuật nào (Hóa, Toán, Văn, Ngoại ngữ...).
 - KHUNG NHẬP LIỆU (React Standard): Bắt buộc sử dụng <textarea> được kiểm soát bằng useState và thẻ sự kiện onChange. Để textarea tự động co giãn chiều cao, phải sử dụng useRef kết hợp với useEffect để tính toán lại scrollHeight mỗi khi nội dung thay đổi. Tuyệt đối KHÔNG thao tác DOM trực tiếp bằng this hay document.getElementById.
 - QUY TẮC BÓC TÁCH & NGẮT KÝ TỰ BẰNG JAVASCRIPT (Delimited Parser by ":" and "-"):
   + Ứng dụng PHẢI có thuật toán JavaScript duyệt từng dòng (line by line) và tự động nhận diện ngắt chuỗi bằng dấu hai chấm (:) và dấu gạch ngang (- hoặc –), bảo toàn công thức KaTeX chứa dấu trừ:
@@ -1021,11 +921,11 @@ function getStudyModePrompt(mode: StudyMode, isEnglish = true): string {
     });
 - ĐỒNG BỘ DỮ LIỆU ĐỘNG TỨC THÌ (REAL-TIME REACTIVE PROPAGATION):
   + Khi người dùng bấm nút "⚡ Bóc tách & Cập nhật bài học" (hoặc dán text vào textarea):
-    (1) Dữ liệu Flashcard 3D lập tức nạp danh sách từ mới (từ tiếng Anh ở mặt trước, nghĩa tiếng Việt và ví dụ ở mặt sau).
+    (1) Dữ liệu Flashcard 3D lập tức nạp danh sách dữ liệu mới (mặt trước hiển thị từ khóa, mặt sau hiển thị giải nghĩa/công thức/ví dụ).
     (2) Toàn bộ câu hỏi trắc nghiệm Active Recall và Exam Mode tự động tạo ngân hàng câu hỏi mới theo các từ vừa nạp.
     (3) Toàn bộ Mini-games (Xếp gạch 5x5, Khủng long Dino, Sút Penalty, Kéo thả nối từ 5x5, Đúng/Sai chớp nhoáng, Sắp xếp câu, Hangman) lập tức cập nhật nội dung, mục tiêu câu hỏi và chướng ngại vật theo đúng tập từ vựng mới bóc tách được!`
         : `4.0. [BẮT BUỘC MỨC ĐỘ CAO NHẤT]: FORM NẠP DỮ LIỆU TỰ CO GIÃN ĐỘ CAO (AUTO-EXPANDING) & THUẬT TOÁN BÓC TÁCH KIẾN THỨC TIẾNG VIỆT BẰNG DẤU HAI CHẤM ":" VÀ DẤU GẠCH NGANG "-":
-- BỐ TRÍ NGAY TRÊN GIAO DIỆN CHÍNH: Cung cấp một Tab/Khung "📥 Nạp Bài Học Mới" nổi bật, cho phép người dùng (giáo viên/học sinh) copy & dán trực tiếp bất kỳ danh sách thuật ngữ hoặc bài học Tiếng Việt nào.
+- BỐ TRÍ NGAY TRÊN GIAO DIỆN CHÍNH: Cung cấp một Tab/Khung "📥 Nạp Bài Học Mới" nổi bật, cho phép người dùng (giáo viên/học sinh) copy & dán trực tiếp bất kỳ tài liệu, đề thi hoặc văn bản học thuật nào (Hóa, Toán, Văn, Ngoại ngữ...).
 - KHUNG NHẬP LIỆU (React Standard): Bắt buộc sử dụng <textarea> được kiểm soát bằng useState và thẻ sự kiện onChange. Để textarea tự động co giãn chiều cao, phải sử dụng useRef kết hợp với useEffect để tính toán lại scrollHeight mỗi khi nội dung thay đổi. Tuyệt đối KHÔNG thao tác DOM trực tiếp bằng this hay document.getElementById.
 - QUY TẮC BÓC TÁCH & NGẮT KÝ TỰ BẰNG JAVASCRIPT (Delimited Parser by ":" and "-"):
   + Thuật toán JavaScript bóc tách kiến thức Tiếng Việt theo từng dòng (bảo toàn công thức KaTeX chứa dấu trừ):
@@ -1110,10 +1010,10 @@ ${isEnglish ? `- Phân loại màu theo Từ loại (Part of Speech):
 - Trả lời đúng trong 4 giây -> Cộng điểm và tích lũy chuỗi Combo Multiplier (x2 XP khi đạt Combo >= 5). Trả lời sai/hết giờ -> Trừ 1 trong 3 trái tim mạng sống và reset combo.`;
 
     case 'scramble':
-      return `[GAME 6: 🧩 SẮP XẾP CẤU TRÚC CÂU (Sentence Builder - Chuẩn Mã Nguồn SentenceUnscrambleGame.tsx)]
-- Giao diện: Phía trên là ${isEnglish ? 'câu dịch tiếng Việt gợi ý và từ vựng mục tiêu' : 'gợi ý ngữ cảnh / nhận định bài học'}; Phía dưới là các mảnh từ (Word Chips) bị xáo trộn vị trí.
-- Cơ chế: Click hoặc kéo thả mảnh từ vào Khay câu hoàn chỉnh. Có nút 'Gợi ý AI' hiển thị cấu trúc và từ đầu tiên.
-- Khi xếp đúng 100% cú pháp -> Khay câu đổi màu xanh lá, hiển thị thông báo chúc mừng và cộng +15 XP.`;
+      return `[GAME 6: 🧩 SẮP XẾP CÂU & PHƯƠNG TRÌNH (Sentence & Equation Builder)]
+- Giao diện: Phía trên là gợi ý (câu dịch nghĩa HOẶC mô tả phản ứng/định nghĩa); Phía dưới là các mảnh ghép (Từ vựng, Biến số, Chất hóa học) bị xáo trộn.
+- Cơ chế linh hoạt (Tự động thích ứng môn học): Nếu là Ngoại ngữ -> Sắp xếp cấu trúc câu ngữ pháp. Nếu là Toán/Lý/Hóa -> Sắp xếp các thành phần thành công thức/phương trình hoàn chỉnh. 
+- Click hoặc kéo thả mảnh ghép vào Khay hoàn chỉnh. Khi xếp đúng 100% -> Khay đổi màu xanh lá, hiện thông báo chúc mừng và cộng +15 XP.`;
 
     case 'hangman':
       return `[GAME 7: 🪢 ĐOÁN CHỮ CỨU MẠNG (Hangman Survival - Chuẩn Mã Nguồn QuickBrainGamesModal.tsx)]
@@ -1154,19 +1054,20 @@ ${activeUtilities.length > 0 ? activeUtilities.join('\n') : '  + Giao diện tin
 
 function getTechnicalRulesPrompt(config: PromptConfig): string {
   if (config.outputFormat === 'single_file_html') {
-    return `- Cấu trúc React + TypeScript + Tailwind CSS + FontAwesome (CDN) + KaTeX.
+    return `- Cấu trúc: React + JavaScript (ES6+) + Tailwind CSS + FontAwesome (CDN) + KaTeX. TUYỆT ĐỐI KHÔNG SỬ DỤNG TypeScript (không dùng interface, type, Enum). Mọi Component và State phải viết bằng JavaScript thuần để trình duyệt dịch trực tiếp qua Babel Standalone.
 - Đóng gói toàn bộ trong DUY NHẤT 1 FILE HTML hoàn chỉnh (<!DOCTYPE html> ... </html>), nhúng Tailwind CSS CDN (<script src="https://cdn.tailwindcss.com"></script>), FontAwesome CDN (<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">), Canvas Confetti CDN, và thư viện KaTeX CDN (cả CSS và JS).
 - BẢO VỆ & DỰ PHÒNG AN TOÀN (Fallback CDN & Icons): Trong trường hợp CDN FontAwesome không tải được, mã nguồn PHẢI tự động hiển thị biểu tượng Unicode/Emoji (🔊, 🔄, ✔️, ❌, 🎮, 💡, ⏱️, 🏆, v.v.) hoặc Inline SVG để giao diện luôn hiển thị trọn vẹn, không bị lỗi nút trống.
 - KHÔNG ĐƯỢC viết tắt, KHÔNG dùng placeholder (như // TODO, // tự viết tiếp). Toàn bộ 7 game và các chế độ học thuật phải được viết code JavaScript xử lý sự kiện thật 100%, chạy mượt mà ngay trên trình duyệt.
 - Sử dụng Web Speech API (window.speechSynthesis với lang='vi-VN') phát âm tiếng Việt chuẩn và Web Audio API (AudioContext) để tạo hiệu ứng âm thanh tiếng bíp/ding/jump/goal khi chơi game.
 - Giao diện đáp ứng 100% (Responsive) trên cả điện thoại và máy tính, hỗ trợ chế độ Sáng / Tối (Light & Dark Mode).`;
   } else if (config.outputFormat === 'react_applet') {
-    return `- Cấu trúc React + TypeScript + Tailwind CSS + FontAwesome (CDN) + KaTeX.
+    return `- Cấu trúc: React + JavaScript (ES6+) + Tailwind CSS + FontAwesome (CDN) + KaTeX. TUYỆT ĐỐI KHÔNG SỬ DỤNG TypeScript (không dùng interface, type, Enum). Mọi Component và State phải viết bằng JavaScript thuần để trình duyệt dịch trực tiếp qua Babel Standalone.
 - Tách biệt rõ ràng các component: Header, NavigationTabs, AcademicModes, GamificationArcade (với từng Canvas engine component riêng biệt), và ProgressDashboard.
 - BẢO VỆ & DỰ PHÒNG AN TOÀN: BẮT BUỘC nhúng trực tiếp CDN FontAwesome hoặc Inline SVG, tuyệt đối không import npm package icon.
 - Sử dụng React hooks (useState, useEffect, useRef, useCallback) xử lý trạng thái mượt mà, lưu trữ LocalStorage và Web Audio API tổng hợp âm thanh hiệu ứng game.`;
   } else {
-    return `- Kiến trúc Module ES6 chuẩn hóa, tách riêng tầng Data Model, Controller xử lý Game Engine, và View Renderer.
+    return `- Cấu trúc: React + JavaScript (ES6+) + Tailwind CSS + FontAwesome (CDN) + KaTeX. TUYỆT ĐỐI KHÔNG SỬ DỤNG TypeScript (không dùng interface, type, Enum). Mọi Component và State phải viết bằng JavaScript thuần để trình duyệt dịch trực tiếp qua Babel Standalone.
+- Kiến trúc Module ES6 chuẩn hóa, tách riêng tầng Data Model, Controller xử lý Game Engine, và View Renderer.
 - Viết mã nguồn hoàn chỉnh 100% không rút gọn bất kỳ hàm nào.`;
   }
 }

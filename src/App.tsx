@@ -7,12 +7,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import ConfigurationArea from './components/ConfigurationArea';
 import PromptOutput from './components/PromptOutput';
-import LiveSimulatorModal from './components/LiveSimulatorModal';
 import DocumentExtractorModal from './components/DocumentExtractorModal';
+import VideoTutorialModal from './components/VideoTutorialModal';
+import OnboardingTour, { checkHasCompletedTour } from './components/OnboardingTour';
 import ToastContainer, { toast } from './components/Toast';
-import { Analytics } from '@vercel/analytics/react';
-import { PromptConfig, GradeLevel, ExamTarget, StudyMode, MiniGameId, ExtractedCard } from './types';
-import { compileMasterPrompt, PRESET_TEMPLATES, THEORY_PRESETS, SAMPLE_VOCABULARY_DEFAULT } from './data/promptTemplates';
+import { PromptConfig, ExtractedCard } from './types';
+import { compileMasterPrompt, THEORY_PRESETS, SAMPLE_VOCABULARY_DEFAULT } from './data/promptTemplates';
+import { initGA } from './utils/analytics';
 
 const STORAGE_KEY = 'engiprompt_studio_config_v2';
 
@@ -66,6 +67,9 @@ function loadSavedConfig(): PromptConfig {
         parsed.systemUtilities = parsed.systemUtilities.filter((u: string) => u !== 'streak_heatmap');
       }
 
+      // 1. Trạng thái mặc định (khi chưa bấm nút): Master Prompt giữ nguyên gốc, không tự chèn dữ liệu bóc tách
+      delete parsed.rawExtractedDocText;
+
       return { ...DEFAULT_CONFIG, ...parsed };
     }
   } catch (e) {
@@ -76,8 +80,24 @@ function loadSavedConfig(): PromptConfig {
 
 export default function App() {
   const [config, setConfig] = useState<PromptConfig>(loadSavedConfig);
-  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [isExtractorOpen, setIsExtractorOpen] = useState(false);
+  const [isVideoTutorialOpen, setIsVideoTutorialOpen] = useState(false);
+  const [isOnboardingTourOpen, setIsOnboardingTourOpen] = useState(false);
+
+  // Initialize Google Analytics 4
+  useEffect(() => {
+    initGA();
+  }, []);
+
+  // Check and automatically trigger Onboarding Tour for first-time visitors
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!checkHasCompletedTour()) {
+        setIsOnboardingTourOpen(true);
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Sync configuration to LocalStorage on change
   useEffect(() => {
@@ -91,10 +111,6 @@ export default function App() {
   const compiledPrompt = useMemo(() => {
     return compileMasterPrompt(config);
   }, [config]);
-
-  const handleSelectPreset = (presetConfig: PromptConfig) => {
-    setConfig(presetConfig);
-  };
 
   const handleReset = () => {
     setConfig(DEFAULT_CONFIG);
@@ -112,10 +128,10 @@ export default function App() {
     <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-zinc-50 dark:bg-black text-zinc-900 dark:text-white font-sans antialiased select-none">
       {/* Header */}
       <Header
-        onSelectPreset={handleSelectPreset}
         onReset={handleReset}
-        onOpenSimulator={() => setIsSimulatorOpen(true)}
         onOpenExtractor={() => setIsExtractorOpen(true)}
+        onOpenVideo={() => setIsVideoTutorialOpen(true)}
+        onOpenTour={() => setIsOnboardingTourOpen(true)}
       />
 
       {/* Main Split-Screen Workspace (58% Left - 42% Right) */}
@@ -132,16 +148,9 @@ export default function App() {
         <PromptOutput
           promptContent={compiledPrompt}
           config={config}
-          onOpenSimulator={() => setIsSimulatorOpen(true)}
+          onOpenVideo={() => setIsVideoTutorialOpen(true)}
         />
       </main>
-
-      {/* Interactive Sandbox Simulator Modal */}
-      <LiveSimulatorModal
-        isOpen={isSimulatorOpen}
-        onClose={() => setIsSimulatorOpen(false)}
-        config={config}
-      />
 
       {/* Document Extractor Modal (Phân hệ Bóc tách tài liệu & Nạp lý thuyết mới) */}
       <DocumentExtractorModal
@@ -149,14 +158,24 @@ export default function App() {
         onClose={() => setIsExtractorOpen(false)}
         config={config}
         onSaveToLessonBank={handleSaveToLessonBank}
-        onOpenSimulator={() => {
-          setIsExtractorOpen(false);
-          setIsSimulatorOpen(true);
-        }}
+        onUpdateConfig={(updatedConfig) => setConfig(updatedConfig)}
+      />
+
+      {/* Video Tutorial Modal (YouTube Link: https://youtu.be/cfU-Ez0-Nec?si=UXpFTHvfWw70dpWD) */}
+      <VideoTutorialModal
+        isOpen={isVideoTutorialOpen}
+        onClose={() => setIsVideoTutorialOpen(false)}
+        onStartTour={() => setIsOnboardingTourOpen(true)}
+      />
+
+      {/* Interactive Onboarding Tour (6-Step Pedagogy Guide) */}
+      <OnboardingTour
+        isOpen={isOnboardingTourOpen}
+        onClose={() => setIsOnboardingTourOpen(false)}
+        onOpenVideoModal={() => setIsVideoTutorialOpen(true)}
       />
       
       <ToastContainer />
-      <Analytics />
     </div>
   );
 }

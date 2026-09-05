@@ -15,7 +15,8 @@ import {
   Code2,
   AlertTriangle,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react';
 import { PromptConfig } from '../types';
 import { trackExportAction } from '../utils/analytics';
@@ -23,10 +24,10 @@ import { trackExportAction } from '../utils/analytics';
 interface PromptOutputProps {
   promptContent: string | string[];
   config: PromptConfig;
-  onOpenSimulator: () => void;
+  onOpenVideo?: () => void;
 }
 
-export default function PromptOutput({ promptContent, config, onOpenSimulator }: PromptOutputProps) {
+export default function PromptOutput({ promptContent, config, onOpenVideo }: PromptOutputProps) {
   const [copied, setCopied] = useState(false);
   const [copyWarning, setCopyWarning] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'prompt' | 'preview' | 'json'>('prompt');
@@ -126,7 +127,7 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
 
   return (
     <div
-      id="rightColumn"
+      id="tour-prompt-output"
       className={`lg:col-span-5 flex flex-col rounded-2xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-xl overflow-hidden transition-all duration-300 ${
         isExpanded
           ? "fixed inset-0 z-[100] border-0 rounded-none h-[100dvh] w-full flex flex-col"
@@ -288,28 +289,30 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
         )}
       </div>
 
-      {/* Model AI Context Advisory */}
-      <div className="px-3.5 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-start gap-1.5 shrink-0">
-        <Info className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
-        <span className="leading-tight">
-          <strong className="text-zinc-600 dark:text-zinc-400">Mẹo chọn AI Model:</strong> Master Prompt chứa đặc tả chi tiết (~{estTokens.toLocaleString()} tokens). Dán vào <strong>Gemini 1.5 Pro, Claude 3.5 Sonnet, GPT-4o</strong> để xuất 100% mã nguồn.
-        </span>
-      </div>
-
-      {/* Bottom Actions Bar */}
-      <div className="shrink-0 sticky bottom-0 bg-white dark:bg-zinc-950 z-20 border-t border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+      {/* Model AI Context Advisory & YouTube Tutorial */}
+      <div className="px-3.5 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-[11px] text-zinc-500 dark:text-zinc-400 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex items-start gap-1.5 min-w-0">
+          <Info className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
+          <span className="leading-tight">
+            <strong className="text-zinc-700 dark:text-zinc-300">Mẹo tạo Web:</strong> Master Prompt (~{estTokens.toLocaleString()} tokens). Dán vào <strong>Google AI Studio</strong> hoặc Gemini Pro.
+          </span>
+        </div>
         <button
           type="button"
           onClick={() => {
-            trackExportAction('open_simulator');
-            onOpenSimulator();
+            if (onOpenVideo) onOpenVideo();
+            else window.open('https://youtu.be/cfU-Ez0-Nec?si=UXpFTHvfWw70dpWD', '_blank', 'noopener,noreferrer');
           }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 text-xs font-semibold transition hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
+          className="flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400 hover:underline shrink-0 cursor-pointer"
+          title="Xem video YouTube hướng dẫn"
         >
-          <Sparkles className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-          <span>Chạy mô phỏng Sandbox</span>
+          <span>Xem Video Hướng Dẫn</span>
+          <ExternalLink className="w-3 h-3" />
         </button>
+      </div>
 
+      {/* Bottom Actions Bar */}
+      <div id="tour-prompt-actions" className="shrink-0 sticky bottom-0 bg-white dark:bg-zinc-950 z-20 border-t border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-end gap-2 shadow-xs">
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap shrink-0">
           <button
             type="button"
@@ -353,6 +356,17 @@ export default function PromptOutput({ promptContent, config, onOpenSimulator }:
             )}
           </button>
           
+          <a 
+            href="https://web-tu-hoc-english.vercel.app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
+            title="Mở Web Mẫu tham khảo (https://web-tu-hoc-english.vercel.app)"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>WEB MẪU</span>
+          </a>
+
           <a 
             href="https://aistudio.google.com/apps" 
             target="_blank" 

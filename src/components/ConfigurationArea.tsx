@@ -239,7 +239,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div id="tour-grade-target" className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Cấp độ học (Custom Dropdown) */}
           <div className="space-y-2.5 relative" ref={gradeDropdownRef}>
             <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block">
@@ -389,7 +389,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
             />
           </div>
 
-          <div className="space-y-2 pt-2">
+          <div id="tour-content-input" className="space-y-2 pt-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <label className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block">
@@ -560,7 +560,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
       </div>
 
       {/* PHẦN 2: THIẾT KẾ GIAO DIỆN & TÙY CHỈNH MÀU SẮC (SaaS Tối Giản) */}
-      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 #0E1116] border-zinc-200 dark:border-zinc-800 space-y-6">
+      <div id="tour-ui-section" className="p-6 rounded-xl bg-white dark:bg-zinc-950 #0E1116] border-zinc-200 dark:border-zinc-800 space-y-6">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
           <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white">
             2. Giao diện & Trải nghiệm
@@ -1023,7 +1023,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
       </div>
 
       {/* PHẦN 3: CHẾ ĐỘ HỌC THUẬT */}
-      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-5">
+      <div id="tour-study-modes" className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
           <div>
             <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-2">
@@ -1112,7 +1112,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
       </div>
 
       {/* PHẦN 4: GAMIFICATION (Giao diện Arcade Playful 60/40) */}
-      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-5">
+      <div id="tour-gamification-section" className="p-6 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
           <div>
             <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-2">
@@ -1244,7 +1244,7 @@ export default function ConfigurationArea({ config, onChange, onOpenExtractor, o
       </div>
 
       {/* PHẦN 5: CẤU HÌNH KỸ THUẬT & OUTPUT FORMAT (SaaS Tối Giản) */}
-      <div className="p-6 rounded-xl bg-white dark:bg-zinc-950 #0E1116] border-zinc-200 dark:border-zinc-800 space-y-6">
+      <div id="tour-export-config" className="p-6 rounded-xl bg-white dark:bg-zinc-950 #0E1116] border-zinc-200 dark:border-zinc-800 space-y-6">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
           <h3 className="font-semibold text-[13px] text-zinc-900 dark:text-white">
             5. Cấu hình kỹ thuật
